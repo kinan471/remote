@@ -28,14 +28,16 @@ export default function ClientProductList({ initialProducts }: { initialProducts
       return;
     }
 
-    const q = normalize(searchQuery);
+    const searchTerms = searchQuery.trim().split(/\s+/).filter(Boolean).map(normalize);
+
     const filtered = initialProducts.filter((p) => {
       const title = normalize(p.title);
       const category = normalize(p.category || "");
       const desc = normalize(p.description || "");
       const platform = normalize(p.source_platform || "");
+      const textToSearch = `${title} ${category} ${desc} ${platform}`;
       
-      return title.includes(q) || category.includes(q) || desc.includes(q) || platform.includes(q);
+      return searchTerms.every(term => textToSearch.includes(term));
     });
     setFilteredProducts(filtered);
   }, [searchQuery, initialProducts]);

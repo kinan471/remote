@@ -89,13 +89,15 @@ export default function Navbar() {
     setIsSearching(true);
     timerRef.current = setTimeout(async () => {
       try {
-        const normalized = normalizeTurkish(query);
-        const { data, error } = await supabase
-          .from("products")
-          .select("*")
-          .or(`title.ilike.%${query}%,title.ilike.%${normalized}%,category.ilike.%${query}%`)
-          .eq("is_active", true)
-          .limit(6);
+        const terms = query.trim().split(/\s+/).filter(Boolean);
+        let s = supabase.from("products").select("*").eq("is_active", true).limit(6);
+        
+        terms.forEach(t => {
+          const norm = normalizeTurkish(t);
+          s = s.or(`title.ilike.%${t}%,title.ilike.%${norm}%,category.ilike.%${t}%`);
+        });
+
+        const { data, error } = await s;
         if (error) throw error;
         setSuggestions(data || []);
       } catch (err) {
