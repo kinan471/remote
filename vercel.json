@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/discover?action=discover&secret=yakala_ultra_secret_2024",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/discover?action=process&secret=yakala_ultra_secret_2024",
+      "schedule": "*/30 * * * *"
+    }
+  ]
+}
