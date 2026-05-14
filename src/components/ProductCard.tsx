@@ -65,10 +65,12 @@ export default function ProductCard({
         <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
         
         {/* Savings Badge */}
-        <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-2xl shadow-sm border border-white/50">
-           <span className="text-[10px] font-bold text-gray-500">Tasarruf:</span>
-           <span className="text-sm font-black text-emerald-600 ml-1">-{formatPrice(savings, product.currency)}</span>
-        </div>
+        {savings > 0 && (
+          <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-2xl shadow-sm border border-white/50">
+             <span className="text-[10px] font-bold text-gray-500">Tasarruf:</span>
+             <span className="text-sm font-black text-emerald-600 ml-1">-{formatPrice(savings, product.currency)}</span>
+          </div>
+        )}
 
         {/* Platform Badge */}
         <div className="absolute bottom-3 right-3 bg-gray-900/80 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1.5 rounded-2xl border border-white/10">
@@ -88,7 +90,7 @@ export default function ProductCard({
         </div>
 
         <Link href={`/product/${product.id}`}>
-          <h3 className="text-sm font-bold text-gray-800 leading-snug line-clamp-2 min-h-[40px] group-hover:text-orange-600 transition-colors">
+          <h3 className="text-sm sm:text-base font-bold text-gray-800 leading-snug line-clamp-2 min-h-[40px] sm:min-h-[48px] group-hover:text-orange-600 transition-colors">
             {product.title}
           </h3>
         </Link>
@@ -98,9 +100,11 @@ export default function ProductCard({
             <span className="text-[10px] text-gray-400 line-through decoration-rose-400/50">{formatPrice(product.original_price, product.currency)}</span>
             <span className="text-lg sm:text-2xl font-black text-gray-900 tracking-tight">{formatPrice(product.current_price, product.currency)}</span>
           </div>
-          <div className="ml-auto bg-orange-100 text-orange-600 font-black text-sm sm:text-lg px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl shadow-sm">
-            %{discount}
-          </div>
+          {discount > 0 && (
+            <div className="ml-auto bg-orange-100 text-orange-600 font-black text-sm sm:text-lg px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl shadow-sm">
+              %{discount}
+            </div>
+          )}
         </div>
 
         {/* SOCIAL PROOF: Fixed Hydration issue */}
