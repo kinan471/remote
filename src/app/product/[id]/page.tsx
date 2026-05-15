@@ -191,7 +191,6 @@ export default function ProductPage() {
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#fafafa] pb-32">
-      <Navbar />
 
       {/* urgency strip */}
       <div
