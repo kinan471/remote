@@ -1,0 +1,23 @@
+name: Yakala Discovery Bot
+
+on:
+  schedule:
+    # يعمل كل ساعة (المرحلة 1: الاستكشاف)
+    - cron: '0 * * * *'
+    # يعمل كل 30 دقيقة (المرحلة 2: المعالجة)
+    - cron: '*/30 * * * *'
+  workflow_dispatch: 
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Discovery Phase (Every Hour)
+        if: github.event.schedule == '0 * * * *' || github.event_name == 'workflow_dispatch'
+        run: |
+          curl -X POST "https://yakala-iota.vercel.app/api/discover?action=discover&secret=yakala_ultra_secret_2024"
+
+      - name: Trigger Processing Phase (Every 30 Min)
+        if: github.event.schedule == '*/30 * * * *' || github.event_name == 'workflow_dispatch'
+        run: |
+          curl -X POST "https://yakala-iota.vercel.app/api/discover?action=process&secret=yakala_ultra_secret_2024"
