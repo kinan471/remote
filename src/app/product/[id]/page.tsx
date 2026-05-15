@@ -9,7 +9,6 @@ import {
   Product,
 } from "@/lib/supabase";
 
-import Navbar from "@/components/Navbar";
 import Link from "next/link";
 import CountdownTimer from "@/components/CountdownTimer";
 import ImageGallery from "@/components/ImageGallery";
@@ -130,7 +129,6 @@ export default function ProductPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-[#fafafa]">
-        <Navbar />
 
         <div className="mx-auto max-w-7xl px-4 pt-32">
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
@@ -154,7 +152,6 @@ export default function ProductPage() {
   if (!product) {
     return (
       <main className="min-h-screen bg-[#fafafa]">
-        <Navbar />
 
         <div className="flex flex-col items-center justify-center pt-40 text-center">
           <div className="mb-6 text-7xl">
