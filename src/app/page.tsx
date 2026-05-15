@@ -1,42 +1,17 @@
-import { supabase, Product } from "@/lib/supabase";
+import { getFeaturedProducts, getActiveProducts, DEFAULT_REVALIDATE } from "@/lib/products";
 import FeaturedSlider from "@/components/FeaturedSlider";
 import FeaturedGrid from "@/components/FeaturedGrid";
 import ClientProductList from "@/components/ClientProductList";
 import Marquee from "@/components/Marquee";
-import Link from "next/link";
 import { Suspense } from "react";
 
 // ISR - revalidate every 60 seconds
-export const revalidate = 60;
-
-const CATCH_CONFIG = {
-  cheapest:   { label: "En Uygun",    icon: "💰", color: "from-green-600 to-emerald-500",  desc: "En düşük fiyat garantisi" },
-  bestseller: { label: "Çok Satılan", icon: "🏆", color: "from-yellow-600 to-amber-500",   desc: "En çok tercih edilen ürün" },
-  expert:     { label: "Uzman Seçimi",icon: "⭐", color: "from-purple-600 to-violet-500",  desc: "Editörlerimizin tavsiyesi" },
-};
-
-async function getProducts() {
-  if (!supabase) {
-    console.warn("Supabase client is not initialized. Check your environment variables.");
-    return [];
-  }
-
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error("Products fetch error:", error);
-    return [];
-  }
-  return (data as Product[]) || [];
-}
+export const revalidate = DEFAULT_REVALIDATE;
 
 export default async function HomePage() {
-  const allProducts = await getProducts();
-  const featuredProducts = allProducts.filter((p) => p.is_featured);
+  // Fetch data via Service Layer
+  const allProducts = await getActiveProducts();
+  const featuredProducts = await getFeaturedProducts();
 
   return (
     <div className="min-h-screen pt-16 sm:pt-16 bg-[#F8F9FA]">

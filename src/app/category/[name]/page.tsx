@@ -1,7 +1,7 @@
-import { supabase, Product } from "@/lib/supabase";
+import { getProductsByCategory, DEFAULT_REVALIDATE } from "@/lib/products";
 import ProductCard from "@/components/ProductCard";
 
-export const revalidate = 60;
+export const revalidate = DEFAULT_REVALIDATE;
 
 export default async function CategoryPage({
   params,
@@ -11,16 +11,8 @@ export default async function CategoryPage({
   const { name } = await params;
   const categoryName = name ? decodeURIComponent(name) : "";
   
-  if (!supabase) return null;
-
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .ilike("category", `%${categoryName}%`)
-    .eq("is_active", true)
-    .order("created_at", { ascending: false });
-
-  const products = (data as Product[]) || [];
+  // Fetch data via Service Layer
+  const products = await getProductsByCategory(categoryName);
 
   return (
     <main className="min-h-screen bg-gray-50">

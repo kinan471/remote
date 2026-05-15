@@ -1,7 +1,7 @@
-import { supabase, Product } from "@/lib/supabase";
+import { searchProducts, getActiveProducts, DEFAULT_REVALIDATE } from "@/lib/products";
 import ProductCard from "@/components/ProductCard";
 
-export const revalidate = 60;
+export const revalidate = DEFAULT_REVALIDATE;
 
 export default async function ProductsListPage({
   searchParams,
@@ -10,19 +10,10 @@ export default async function ProductsListPage({
 }) {
   const { q: searchQuery } = await searchParams;
 
-  if (!supabase) return null;
-
-  let query = supabase
-    .from("products")
-    .select("*")
-    .eq("is_active", true);
-
-  if (searchQuery) {
-    query = query.ilike("title", `%${searchQuery}%`);
-  }
-
-  const { data } = await query.order("created_at", { ascending: false });
-  const products = (data as Product[]) || [];
+  // Fetch data via Service Layer
+  const products = searchQuery 
+    ? await searchProducts(searchQuery)
+    : await getActiveProducts();
 
   return (
     <main className="min-h-screen bg-[#fafafa] pt-24 pb-20">
@@ -49,7 +40,7 @@ export default async function ProductsListPage({
         {products.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm">
             <div className="text-4xl mb-4">🔍</div>
-            <h3 className="text-lg font-bold text-gray-900">Aradığınız kriterlere uygun ürün bulunamadı</h3>
+            <h3 className="text-lg font-bold text-gray-900">Aradığınız kriterlere uygun ürün bulunamadى</h3>
             <p className="text-gray-500 mt-1">Lütfen farklı kelimelerle tekrar deneyin.</p>
           </div>
         ) : (
