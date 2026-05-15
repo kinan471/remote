@@ -58,7 +58,7 @@ export default function Navbar() {
         if (error) throw error;
 
         const tree: Record<string, Set<string>> = {};
-        data?.forEach((item) => {
+        data?.forEach((item: { category: string | null }) => {
           if (!item.category) return;
           const parts = item.category.split(">").map((s: string) => s.trim());
           const parent = parts[0];
@@ -104,7 +104,7 @@ export default function Navbar() {
         if (error) throw error;
 
         // تصفية ذكية محلية لضمان وجود كل الكلمات في العنوان أو التصنيف
-        const filtered = (data || []).filter(p => {
+        const filtered = (data || []).filter((p: Product) => {
           const text = normalizeTurkish(`${p.title} ${p.category}`);
           return terms.every(t => text.includes(normalizeTurkish(t)));
         }).slice(0, 6);

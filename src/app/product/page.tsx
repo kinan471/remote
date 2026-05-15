@@ -1,7 +1,7 @@
-import { searchProducts, getActiveProducts, DEFAULT_REVALIDATE } from "@/lib/products";
+import { searchProducts, getActiveProducts } from "@/lib/products";
 import ProductCard from "@/components/ProductCard";
 
-export const revalidate = DEFAULT_REVALIDATE;
+export const revalidate = 60;
 
 export default async function ProductsListPage({
   searchParams,

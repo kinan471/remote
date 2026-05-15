@@ -1,7 +1,7 @@
-import { getProductsByCategory, DEFAULT_REVALIDATE } from "@/lib/products";
+import { getProductsByCategory } from "@/lib/products";
 import ProductCard from "@/components/ProductCard";
 
-export const revalidate = DEFAULT_REVALIDATE;
+export const revalidate = 60;
 
 export default async function CategoryPage({
   params,

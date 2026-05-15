@@ -1,4 +1,4 @@
-import { getFeaturedProducts, getActiveProducts, DEFAULT_REVALIDATE } from "@/lib/products";
+import { getFeaturedProducts, getActiveProducts } from "@/lib/products";
 import FeaturedSlider from "@/components/FeaturedSlider";
 import FeaturedGrid from "@/components/FeaturedGrid";
 import ClientProductList from "@/components/ClientProductList";
@@ -6,7 +6,7 @@ import Marquee from "@/components/Marquee";
 import { Suspense } from "react";
 
 // ISR - revalidate every 60 seconds
-export const revalidate = DEFAULT_REVALIDATE;
+export const revalidate = 60;
 
 export default async function HomePage() {
   // Fetch data via Service Layer

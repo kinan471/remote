@@ -127,7 +127,7 @@ export async function processQueue(limit = 3) {
 
   // 2. Process in parallel (using Promise.all with simple chunking or just all since limit is small)
   // For a real production app, use a proper queue with p-limit
-  const results = await Promise.allSettled(tasks.map(async (task) => {
+  const results = await Promise.allSettled((tasks as any[]).map(async (task: any) => {
     try {
       // Mark as processing
       await supabase.from("pending_scrapes").update({ status: "processing" }).eq("id", task.id);
