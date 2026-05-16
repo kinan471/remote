@@ -36,10 +36,10 @@ const PLATFORM_CONFIG: Record<
 };
 
 const persuasionMessages = [
-  "🔥 Bugün en çok görüntülenen ürün",
-  "⚡ Son 1 saatte 24 kişi aldı",
-  "💸 Fiyat düşüşü yeni oldu",
-  "⏳ Stok hızla tükeniyor",
+  "🔥 Bugün en çok ilgi gören ürünlerden",
+  "⚡ Popüler Seçim: Teknoloji meraklıları inceliyor",
+  "💸 Fiyat/Performans dengesi çok yüksek",
+  "⏳ Fırsat sona ermeden göz atın",
 ];
 
 const ProductCard = memo(function ProductCard({
@@ -60,14 +60,18 @@ const ProductCard = memo(function ProductCard({
     (product.current_price || 0);
 
   useEffect(() => {
-    setViewerCount(Math.floor(Math.random() * 50) + 15);
+    setViewerCount(product.social_proof_count || Math.floor(Math.random() * 20) + 5);
 
-    setMessage(
-      persuasionMessages[
-        Math.floor(Math.random() * persuasionMessages.length)
-      ]
-    );
-  }, []);
+    if (product.is_lowest_price) {
+      setMessage("🏆 Bu platformdaki en uygun fiyat garantisi");
+    } else if (product.scarcity_level > 0 && product.scarcity_level < 10) {
+      setMessage(`⏳ Stokta son ${product.scarcity_level} adet kaldı!`);
+    } else if (discount >= 40) {
+      setMessage("💸 Kaçırılmayacak %" + discount + " indirim fırsatı");
+    } else {
+      setMessage(persuasionMessages[Math.floor(Math.random() * persuasionMessages.length)]);
+    }
+  }, [product.social_proof_count, product.is_lowest_price, product.scarcity_level, discount]);
 
   const platform =
     PLATFORM_CONFIG[
@@ -128,7 +132,7 @@ const ProductCard = memo(function ProductCard({
       {/* TREND SCORE */}
       <div className="absolute top-3 right-3 z-30">
         <div className="rounded-full bg-black/80 backdrop-blur-md px-3 py-1.5 text-[10px] font-black text-white shadow-xl">
-          🔥 9.8 TREND SCORE
+          🔥 {((product.rating * 2) + (product.is_lowest_price ? 1 : 0)).toFixed(1)} SKOR
         </div>
       </div>
 
@@ -188,12 +192,14 @@ const ProductCard = memo(function ProductCard({
             <span>⭐</span>
 
             <span className="text-xs font-black text-amber-700">
-              {product.rating || "4.9"}
+              {product.rating || "4.5"}
             </span>
 
-            <span className="text-[10px] text-amber-600">
-              (2.1K)
-            </span>
+            {product.review_count > 0 && (
+              <span className="text-[10px] text-amber-600">
+                ({product.review_count > 1000 ? (product.review_count/1000).toFixed(1) + 'K' : product.review_count})
+              </span>
+            )}
           </div>
         </div>
 
@@ -254,7 +260,7 @@ const ProductCard = memo(function ProductCard({
           </div>
 
           <p className="text-xs font-medium text-gray-500">
-            💸 Kullanıcılar bugün ortalama ₺240 daha az ödüyor
+            {product.is_lowest_price ? "✅ Bu platformdaki en uygun fiyat" : "💸 Fırsat takipçilerimiz bu ürünü inceliyor"}
           </p>
         </div>
 
@@ -284,7 +290,7 @@ const ProductCard = memo(function ProductCard({
           </span>
 
           <p className="text-[11px] font-bold text-rose-700">
-            Son 3 ürün bu fiyatta kaldı
+            {product.scarcity_level > 0 ? `Son ${product.scarcity_level} ürün bu fiyatta kaldı` : "Fırsat sona ermek üzere"}
           </p>
         </div>
 
@@ -329,11 +335,11 @@ const ProductCard = memo(function ProductCard({
 
         {/* CTA */}
         <div className="mt-auto flex gap-2 pt-2">
-          {/* Compare Desktop */}
+          {/* Compare Button - shows text on all screens */}
           <Link
             href={`/compare?p1=${product.id}`}
             className="
-              hidden sm:flex
+              flex
               h-12
               flex-1
               items-center
@@ -355,35 +361,6 @@ const ProductCard = memo(function ProductCard({
             Karşılaştır
           </Link>
 
-          {/* Compare Mobile */}
-          <Link
-            href={`/compare?p1=${product.id}`}
-            className="
-              flex h-12 w-12 shrink-0 items-center justify-center
-              rounded-2xl
-              border border-gray-200
-              bg-gray-50
-              text-gray-400
-              transition-all duration-300
-              hover:bg-orange-50
-              hover:text-orange-500
-              sm:hidden
-            "
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
-            </svg>
-          </Link>
-
           {/* CTA BUTTON */}
           <a
             href={
@@ -395,8 +372,7 @@ const ProductCard = memo(function ProductCard({
             className="
               relative
               overflow-hidden
-              flex-1
-              sm:flex-[1.5]
+              flex-[1.5]
               h-12
               rounded-2xl
               bg-gradient-to-r

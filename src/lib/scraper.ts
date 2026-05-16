@@ -163,6 +163,7 @@ export async function scrapeProduct(url: string) {
             images:        { type: "array", items: { type: "string" } },
             category:      { type: "string" },
             stock:         { type: "number" },
+            reviewCount:   { type: "number" },
             specs: {
               type: "object",
               additionalProperties: { type: "string" },
@@ -224,7 +225,9 @@ export async function scrapeProduct(url: string) {
     images: images.slice(0, 8),
     category: extracted.category || "Genel",
     rating: extracted.rating || 4.5,
-    scarcity_level: extracted.stock || Math.floor(Math.random() * 10) + 5,
+    review_count: extracted.reviewCount || 0,
+    scarcity_level: extracted.stock || Math.floor(Math.random() * 10) + 3,
+    social_proof_count: Math.floor(Math.random() * 40) + 10, // Default for now
     specs: extracted.specs || {},
     source_url: url,
     source_platform: platform,

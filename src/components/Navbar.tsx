@@ -32,6 +32,7 @@ export default function Navbar() {
   const [activeSubCategory, setActiveSubCategory] = useState<string | null>(null);
 
   const categoryRef = useRef<HTMLDivElement>(null);
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -122,16 +123,11 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        categoryRef.current &&
-        !categoryRef.current.contains(e.target as Node)
-      ) {
-        setIsCategoryOpen(false);
-      }
-      if (
-        searchRef.current &&
-        !searchRef.current.contains(e.target as Node)
-      ) {
+      const inCategory = categoryRef.current?.contains(e.target as Node)
+        || categoryDropdownRef.current?.contains(e.target as Node);
+      if (!inCategory) setIsCategoryOpen(false);
+
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
         setSuggestions([]);
       }
     };
@@ -231,7 +227,9 @@ export default function Navbar() {
 
           {/* SEARCH WRAPPER */}
           <div
+            ref={searchRef}
             className="
+              relative
               flex
               h-12
               flex-1
@@ -250,20 +248,21 @@ export default function Navbar() {
               sm:h-14
             "
           >
-            {/* CATEGORY */}
+            {/* CATEGORY BUTTON */}
             <div
               ref={categoryRef}
               className="
-                relative
                 h-full
                 min-w-[84px]
                 sm:min-w-[150px]
+                shrink-0
               "
             >
               <button
-                onClick={() =>
-                  setIsCategoryOpen(!isCategoryOpen)
-                }
+                onClick={() => {
+                  setIsCategoryOpen(!isCategoryOpen);
+                  if (!isCategoryOpen) setActiveSubCategory(null);
+                }}
                 className="
                   flex
                   h-full
@@ -291,165 +290,23 @@ export default function Navbar() {
                 <span className="truncate">
                   {selectedParent}
                 </span>
-
                 <svg
                   width="12"
                   height="12"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="3"
-                  className={`shrink-0 transition-transform ${
-                    isCategoryOpen
-                      ? "rotate-180"
-                      : ""
+                  className={`shrink-0 transition-transform duration-200 ${
+                    isCategoryOpen ? "rotate-180" : ""
                   }`}
                 >
                   <path d="M2 4l4 4 4-4" />
                 </svg>
               </button>
-
-              {/* MOBILE FRIENDLY DROPDOWN */}
-              <div
-                className={`
-                  absolute
-                  left-0
-                  top-[calc(100%+10px)]
-                  z-[70]
-                  w-[92vw]
-                  max-w-[320px]
-                  overflow-hidden
-                  rounded-3xl
-                  border
-                  border-gray-100
-                  bg-white
-                  shadow-[0_30px_80px_rgba(0,0,0,.12)]
-                  transition-all
-                  duration-200
-                  sm:w-80
-                  ${
-                    isCategoryOpen
-                      ? "visible translate-y-0 opacity-100 scale-100"
-                      : "invisible -translate-y-2 opacity-0 scale-95"
-                  }
-                `}
-              >
-                <div className="border-b border-gray-100 p-4">
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400">
-                    Kategoriler
-                  </h3>
-                </div>
-
-                <div className="max-h-[60vh] overflow-y-auto">
-                  {categories.map((parent) => {
-                    const hasSub =
-                      hierarchy[parent]?.length > 0;
-
-                    const isActive =
-                      activeSubCategory === parent;
-
-                    return (
-                      <div
-                        key={parent}
-                        className="border-b border-gray-50 last:border-0"
-                      >
-                        <button
-                          onClick={() => {
-                            if (hasSub) {
-                              setActiveSubCategory(
-                                isActive
-                                  ? null
-                                  : parent
-                              );
-                            } else {
-                              handleCategorySelect(
-                                parent
-                              );
-                            }
-                          }}
-                          className="
-                            flex
-                            w-full
-                            items-center
-                            justify-between
-                            px-5
-                            py-4
-                            text-left
-                            transition-all
-                            hover:bg-orange-50
-                          "
-                        >
-                          <span className="text-sm font-bold text-gray-700">
-                            {parent}
-                          </span>
-
-                          {hasSub && (
-                            <svg
-                              width="12"
-                              height="12"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              className={`transition-transform ${
-                                isActive
-                                  ? "rotate-180 text-orange-500"
-                                  : "text-gray-300"
-                              }`}
-                            >
-                              <path d="M2 4l4 4 4-4" />
-                            </svg>
-                          )}
-                        </button>
-
-                        {isActive && hasSub && (
-                          <div className="bg-gray-50/70 py-2">
-                            {hierarchy[parent].map(
-                              (child) => (
-                                <button
-                                  key={child}
-                                  onClick={() =>
-                                    handleSubCategorySelect(
-                                      parent,
-                                      child
-                                    )
-                                  }
-                                  className="
-                                    block
-                                    w-full
-                                    px-8
-                                    py-3
-                                    text-left
-                                    text-sm
-                                    font-semibold
-                                    text-gray-500
-                                    transition-all
-                                    hover:bg-orange-50
-                                    hover:text-orange-600
-                                  "
-                                >
-                                  {child}
-                                </button>
-                              )
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
             </div>
 
-            {/* SEARCH */}
-            <div
-              ref={searchRef}
-              className="
-                relative
-                flex
-                h-full
-                flex-1
-                items-center
-              "
-            >
+            {/* SEARCH INPUT AREA */}
+            <div className="flex h-full flex-1 items-center">
               {/* ICON */}
               <div className="pl-3 text-gray-400">
                 <svg
@@ -462,11 +319,7 @@ export default function Navbar() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
-                  <circle
-                    cx="11"
-                    cy="11"
-                    r="8"
-                  />
+                  <circle cx="11" cy="11" r="8" />
                   <path d="m21 21-4.3-4.3" />
                 </svg>
               </div>
@@ -476,9 +329,7 @@ export default function Navbar() {
                 type="text"
                 placeholder="Ürün ara..."
                 value={query}
-                onChange={(e) =>
-                  setQuery(e.target.value)
-                }
+                onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
                 className="
                   h-full
@@ -493,94 +344,99 @@ export default function Navbar() {
                   sm:text-sm
                 "
               />
+            </div>
 
-              {/* SEARCH SUGGESTIONS */}
-              {(suggestions.length > 0 ||
-                (isSearching &&
-                  query.length > 1)) && (
-                <div
-                  className="
-                    absolute
-                    left-0
-                    top-[calc(100%+10px)]
-                    z-50
-                    w-[95vw]
-                    max-w-full
-                    overflow-hidden
-                    rounded-3xl
-                    border
-                    border-gray-100
-                    bg-white
-                    shadow-[0_25px_80px_rgba(0,0,0,.12)]
-                    sm:w-full
-                  "
-                >
-                  {isSearching ? (
-                    <div className="p-6 text-center">
-                      <div className="mx-auto mb-3 h-6 w-6 rounded-full border-2 border-orange-200 border-t-orange-500 animate-spin" />
+            {/* ── CATEGORY DROPDOWN — positioned from search wrapper ── */}
 
-                      <p className="text-xs font-bold text-gray-400">
-                        Yükleniyor...
-                      </p>
-                    </div>
-                  ) : (
-                    suggestions.map((p) => (
-                      <Link
-                        key={p.id}
-                        href={`/product/${p.id}`}
-                        onClick={() =>
-                          setSuggestions([])
-                        }
+
+            {/* SEARCH SUGGESTIONS — positioned relative to the full search wrapper */}
+            {(suggestions.length > 0 ||
+              (isSearching &&
+                query.length > 1)) && (
+              <div
+                className="
+                  absolute
+                  left-0
+                  right-0
+                  top-[calc(100%+10px)]
+                  z-[200]
+                  w-full
+                  overflow-hidden
+                  rounded-2xl
+                  border
+                  border-gray-100
+                  bg-white
+                  shadow-[0_25px_80px_rgba(0,0,0,.14)]
+                "
+              >
+                {isSearching ? (
+                  <div className="p-6 text-center">
+                    <div className="mx-auto mb-3 h-6 w-6 rounded-full border-2 border-orange-200 border-t-orange-500 animate-spin" />
+                    <p className="text-xs font-bold text-gray-400">
+                      Yükleniyor...
+                    </p>
+                  </div>
+                ) : (
+                  suggestions.map((p) => (
+                    <Link
+                      key={p.id}
+                      href={`/product/${p.id}`}
+                      onClick={() =>
+                        setSuggestions([])
+                      }
+                      className="
+                        flex
+                        items-center
+                        gap-3
+                        border-b
+                        border-gray-50
+                        p-3
+                        transition-all
+                        hover:bg-orange-50
+                        last:border-0
+                      "
+                    >
+                      <div
                         className="
-                          flex
-                          items-center
-                          gap-3
-                          border-b
-                          border-gray-50
-                          p-3
-                          transition-all
-                          hover:bg-orange-50
+                          relative
+                          h-12
+                          w-12
+                          overflow-hidden
+                          rounded-xl
+                          bg-gray-100
+                          shrink-0
                         "
                       >
-                        <div
-                          className="
-                            relative
-                            h-14
-                            w-14
-                            overflow-hidden
-                            rounded-2xl
-                            bg-gray-100
-                            shrink-0
-                          "
-                        >
-                          {p.images?.[0] && (
-                            <Image
-                              src={p.images[0]}
-                              alt={p.title}
-                              fill
-                              className="object-cover"
-                            />
+                        {p.images?.[0] && (
+                          <Image
+                            src={p.images[0]}
+                            alt={p.title}
+                            fill
+                            className="object-cover"
+                          />
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-1 text-xs font-bold text-gray-900 sm:text-sm">
+                          {p.title}
+                        </p>
+                        <p className="mt-0.5 text-xs font-black text-orange-500 sm:text-sm">
+                          {formatPrice(
+                            p.current_price,
+                            p.currency
                           )}
-                        </div>
+                        </p>
+                      </div>
 
-                        <div className="min-w-0 flex-1">
-                          <p className="line-clamp-2 text-xs font-bold text-gray-900 sm:text-sm">
-                            {p.title}
-                          </p>
-
-                          <p className="mt-1 text-sm font-black text-orange-500">
-                            {formatPrice(
-                              p.current_price,
-                              p.currency
-                            )}
-                          </p>
-                        </div>
-                      </Link>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-gray-300">
+                        <path d="M9 18l6-6-6-6"/>
+                      </svg>
+                    </Link>
+                  ))
+                )}
+              </div>
+            )}
 
             {/* BUTTON */}
             <button
@@ -628,6 +484,138 @@ export default function Navbar() {
                 </svg>
               )}
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── CATEGORY SIDE DRAWER ── */}
+      {/* Overlay */}
+      <div
+        className={`
+          fixed inset-0 z-[200] bg-black/50 backdrop-blur-sm transition-opacity duration-300
+          ${isCategoryOpen ? "opacity-100 visible" : "opacity-0 invisible"}
+        `}
+        onClick={() => setIsCategoryOpen(false)}
+      />
+
+      {/* Drawer */}
+      <div
+        ref={categoryDropdownRef}
+        className={`
+          fixed top-0 left-0 z-[210] flex h-[100dvh] w-[85vw] max-w-[320px] flex-col
+          bg-white shadow-2xl transition-transform duration-300 ease-out
+          ${isCategoryOpen ? "translate-x-0" : "-translate-x-full"}
+        `}
+      >
+        {/* Drawer Header */}
+        <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 px-5 py-4">
+          <h3 className="text-sm font-black uppercase tracking-wider text-gray-800">
+            Kategoriler
+          </h3>
+          <button
+            onClick={() => setIsCategoryOpen(false)}
+            className="rounded-full bg-gray-200 p-2 text-gray-500 transition-colors hover:bg-orange-100 hover:text-orange-600"
+          >
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6L6 18M6 6l12 12" viewBox="0 0 24 24" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Drawer Content */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-3">
+            {/* All products */}
+            <button
+              onClick={() => handleCategorySelect("Kategoriler")}
+              className="
+                flex w-full items-center gap-3 rounded-xl px-4 py-3
+                text-left text-sm font-black text-orange-500
+                transition-all hover:bg-orange-50
+              "
+            >
+              <span className="text-lg">🏠</span>
+              <span>Tüm Ürünler</span>
+            </button>
+          </div>
+
+          <div className="border-t border-gray-50 px-3 py-2">
+            {categories.map((parent) => {
+              const hasSub = (hierarchy[parent]?.length ?? 0) > 0;
+              const isActive = activeSubCategory === parent;
+              return (
+                <div key={parent} className="mb-1">
+                  <button
+                    onClick={() => {
+                      if (hasSub) {
+                        setActiveSubCategory(isActive ? null : parent);
+                      } else {
+                        handleCategorySelect(parent);
+                      }
+                    }}
+                    className={`
+                      flex w-full items-center justify-between rounded-xl px-4 py-3
+                      text-left text-sm transition-all
+                      ${isActive
+                        ? "bg-orange-50 font-black text-orange-600"
+                        : "font-bold text-gray-700 hover:bg-gray-50"
+                      }
+                    `}
+                  >
+                    <span className="truncate">{parent}</span>
+                    {hasSub && (
+                      <svg
+                        width="12"
+                        height="12"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={`shrink-0 transition-transform duration-300 ${
+                          isActive ? "rotate-90 text-orange-500" : "text-gray-300"
+                        }`}
+                      >
+                        <path d="M3 1.5l4 4-4 4" />
+                      </svg>
+                    )}
+                  </button>
+
+                  {/* Subcategories (Accordion) */}
+                  {isActive && hasSub && (
+                    <div className="mt-1 pb-2 pl-4 pr-2">
+                      <div className="rounded-xl bg-gray-50/80 p-2">
+                        <button
+                          onClick={() => handleCategorySelect(parent)}
+                          className="
+                            mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2
+                            text-xs font-black text-orange-600 transition-all hover:bg-orange-100/50
+                          "
+                        >
+                          <span>📂</span>
+                          <span>Tümünü Gör</span>
+                        </button>
+
+                        {hierarchy[parent].map((child) => (
+                          <button
+                            key={child}
+                            onClick={() => handleSubCategorySelect(parent, child)}
+                            className="
+                              flex w-full items-center gap-3 rounded-lg px-3 py-2.5
+                              text-left text-xs font-semibold text-gray-600
+                              transition-all hover:bg-white hover:text-orange-600 hover:shadow-sm
+                            "
+                          >
+                            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-orange-300" />
+                            <span className="truncate">{child}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

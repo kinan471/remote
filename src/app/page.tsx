@@ -14,8 +14,11 @@ export default async function HomePage() {
   const featuredProducts = await getFeaturedProducts();
 
   return (
-    <div className="min-h-screen pt-16 sm:pt-16 bg-[#F8F9FA]">
-      <Marquee />
+    <div className="min-h-screen bg-[#F8F9FA]">
+      {/* Marquee sits right below fixed navbar - pt-[68px] on mobile, pt-20 on sm+ */}
+      <div className="pt-[68px] sm:pt-20">
+        <Marquee />
+      </div>
       <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 mt-4">
         
         {/* ========== FEATURED SLIDER (Banner) ========== */}

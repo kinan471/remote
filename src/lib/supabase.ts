@@ -28,6 +28,7 @@ export type Product = {
   is_active: boolean;
   click_count: number;
   currency: string;
+  review_count: number;
   specs?: Record<string, string>;
   is_lowest_price?: boolean;
   comparison_data?: any;

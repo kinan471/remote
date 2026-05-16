@@ -15,10 +15,10 @@ import ImageGallery from "@/components/ImageGallery";
 import { useParams } from "next/navigation";
 
 const persuasionMessages = [
-  "🔥 Bugün en çok görüntülenen fırsat",
-  "⚡ Son 1 saatte 27 kişi satın aldı",
-  "💸 Fiyat düşüşü az önce gerçekleşti",
-  "⏳ Stok hızla tükeniyor",
+  "🔥 Bugünün en popüler teknoloji fırsatı",
+  "⚡ Yüksek talep: Şu an birçok kişi inceliyor",
+  "💸 Kaçırılmayacak fiyat/performans ürünü",
+  "⏳ Stoklar güncellenmeden yakalayın",
 ];
 
 const fakePurchases = [
@@ -65,19 +65,14 @@ export default function ProductPage() {
 
     fetchProduct();
 
-    setLiveViewers(
-      Math.floor(Math.random() * 70) + 20
-    );
+    setLiveViewers(product?.social_proof_count || Math.floor(Math.random() * 30) + 10);
 
-    setPersuasionText(
-      persuasionMessages[
-        Math.floor(
-          Math.random() *
-            persuasionMessages.length
-        )
-      ]
-    );
-  }, [id]);
+    if (product?.is_lowest_price) {
+      setPersuasionText("🏆 Bu ürün piyasadaki en düşük fiyatta!");
+    } else {
+      setPersuasionText(persuasionMessages[Math.floor(Math.random() * persuasionMessages.length)]);
+    }
+  }, [id, product?.social_proof_count, product?.is_lowest_price]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -216,11 +211,7 @@ export default function ProductPage() {
             text-white
           "
         >
-          🔥 Son 24 saatte 312 sipariş
-          verildi — ⏳ Kampanya bugün
-          bitiyor — ⚡ Stok kritik
-          seviyede — 💸 Fiyat tekrar
-          yükselebilir
+          🔥 {product.click_count || 120}+ kişi bu ürüne baktı — ⏳ Kampanya sınırlı süreli — ⚡ Stok {product.scarcity_level < 5 ? 'Kritik' : 'Aktif'} — 💸 En iyi fiyat garantisi
         </div>
       </div>
 
@@ -286,7 +277,7 @@ export default function ProductPage() {
               )}
 
               <div className="rounded-2xl bg-black/80 px-4 py-2 text-[11px] font-black text-white backdrop-blur-md">
-                ⚡ TREND SCORE 9.8
+                ⚡ TREND SKOR {((product.rating * 2) + (product.is_lowest_price ? 1 : 0)).toFixed(1)}
               </div>
             </div>
 
@@ -431,9 +422,11 @@ export default function ProductPage() {
                     {product.rating.toFixed(1)}
                   </span>
 
-                  <span className="text-xs text-amber-600">
-                    (2.1K değerlendirme)
-                  </span>
+                  {product.review_count > 0 && (
+                    <span className="text-xs text-amber-600">
+                      ({product.review_count > 1000 ? (product.review_count/1000).toFixed(1) + 'K' : product.review_count} değerlendirme)
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -534,7 +527,7 @@ export default function ProductPage() {
                   </p>
 
                   <h3 className="mt-2 text-3xl font-black">
-                    9.8 / 10
+                    {((product.rating * 2) + (product.is_lowest_price ? 1 : 0)).toFixed(1)} / 10
                   </h3>
                 </div>
 
@@ -646,11 +639,7 @@ export default function ProductPage() {
                     <p className="text-sm font-bold text-gray-600">
                       Piyasa fiyatı:
                       <span className="ml-2 text-red-500 line-through">
-                        ₺
-                        {Math.round(
-                          product.original_price +
-                            700
-                        )}
+                        {formatPrice(product.original_price * 1.15, product.currency)}
                       </span>
                     </p>
 
