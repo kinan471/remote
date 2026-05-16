@@ -92,18 +92,15 @@ export default function Navbar() {
         const terms = query.trim().split(/\s+/).filter(Boolean);
         if (terms.length === 0) return;
 
-        // نجلب المنتجات التي تطابق الكلمة الأولى أولاً (أو أي كلمة)
-        // ثم نقوم بالتصفية الذكية محلياً لضمان وجود كل الكلمات (AND)
         const { data, error } = await supabase
           .from("products")
           .select("*")
           .eq("is_active", true)
-          .ilike("title", `%${terms[0]}%`) // فلترة أولية لتقليل البيانات
+          .ilike("title", `%${terms[0]}%`)
           .limit(20);
 
         if (error) throw error;
 
-        // تصفية ذكية محلية لضمان وجود كل الكلمات في العنوان أو التصنيف
         const filtered = (data || []).filter((p: Product) => {
           const text = normalizeTurkish(`${p.title} ${p.category}`);
           return terms.every(t => text.includes(normalizeTurkish(t)));
@@ -116,7 +113,7 @@ export default function Navbar() {
       } finally {
         setIsSearching(false);
       }
-    }, 300);
+    }, 400);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -125,11 +122,16 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (categoryRef.current && !categoryRef.current.contains(e.target as Node)) {
+      if (
+        categoryRef.current &&
+        !categoryRef.current.contains(e.target as Node)
+      ) {
         setIsCategoryOpen(false);
-        setActiveSubCategory(null);
       }
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(e.target as Node)
+      ) {
         setSuggestions([]);
       }
     };
@@ -173,97 +175,261 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 lg:px-8">
-        {/* الحاوية الرئيسية: flex-row دائماً */}
-        <div className="flex flex-row items-center h-16 gap-2 sm:gap-4">
+    <nav className="fixed top-0 z-50 w-full border-b border-gray-100 bg-white/90 backdrop-blur-2xl">
+      {/* glow */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute left-0 top-0 h-32 w-32 rounded-full bg-orange-200/30 blur-3xl" />
+        <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-rose-200/20 blur-3xl" />
+      </div>
+
+      <div className="relative mx-auto max-w-7xl px-3 sm:px-4 lg:px-8">
+        {/* MOBILE HEIGHT IMPROVED */}
+        <div className="flex h-[68px] items-center gap-2 sm:h-20 sm:gap-4">
           
-          {/* الشعار - يختفي في الجوال الصغير جداً لتوفير مساحة أو يصغر */}
-          <Link href="/" className="flex items-center shrink-0">
-            <span className="text-lg sm:text-2xl font-black text-orange-500 font-poppins tracking-tighter">Yakala.</span>
+          {/* LOGO */}
+          <Link
+            href="/"
+            className="
+              group
+              flex
+              shrink-0
+              items-center
+            "
+          >
+            <div className="relative">
+              <span
+                className="
+                  text-[22px]
+                  font-black
+                  tracking-tighter
+                  text-gray-900
+                  sm:text-3xl
+                "
+              >
+                Yakala
+                <span className="text-orange-500">
+                  .
+                </span>
+              </span>
+
+              <div
+                className="
+                  absolute
+                  -bottom-1
+                  left-0
+                  h-[3px]
+                  w-0
+                  rounded-full
+                  bg-orange-500
+                  transition-all
+                  duration-300
+                  group-hover:w-full
+                "
+              />
+            </div>
           </Link>
 
-          {/* حاوية البحث الكبرى (تشمل التصنيف والحقل والزر) */}
-          <div className="flex-1 flex items-center h-10 sm:h-12 bg-gray-50 rounded-xl sm:rounded-2xl border border-gray-200 focus-within:border-orange-500 focus-within:ring-4 focus-within:ring-orange-500/10 transition-all overflow-visible">
-            
-            {/* قسم التصنيفات: يأخذ 25% في الموبايل */}
-            <div ref={categoryRef} className="relative h-full w-1/4 min-w-[70px] sm:w-auto">
+          {/* SEARCH WRAPPER */}
+          <div
+            className="
+              flex
+              h-12
+              flex-1
+              items-center
+              overflow-visible
+              rounded-2xl
+              border
+              border-gray-200
+              bg-white/90
+              shadow-[0_8px_30px_rgba(0,0,0,.04)]
+              transition-all
+              duration-300
+              focus-within:border-orange-400
+              focus-within:ring-4
+              focus-within:ring-orange-500/10
+              sm:h-14
+            "
+          >
+            {/* CATEGORY */}
+            <div
+              ref={categoryRef}
+              className="
+                relative
+                h-full
+                min-w-[84px]
+                sm:min-w-[150px]
+              "
+            >
               <button
-                onClick={() => setIsCategoryOpen(!isCategoryOpen)}
-                className="w-full h-full px-2 sm:px-5 flex items-center justify-between gap-1 border-r border-gray-200 text-[9px] sm:text-xs font-black text-gray-700 uppercase tracking-wider hover:bg-gray-100 transition-colors rounded-l-xl sm:rounded-l-2xl"
+                onClick={() =>
+                  setIsCategoryOpen(!isCategoryOpen)
+                }
+                className="
+                  flex
+                  h-full
+                  w-full
+                  items-center
+                  justify-between
+                  gap-1
+                  rounded-l-2xl
+                  border-r
+                  border-gray-200
+                  bg-gray-50/80
+                  px-2
+                  text-[10px]
+                  font-black
+                  uppercase
+                  tracking-wide
+                  text-gray-700
+                  transition-all
+                  hover:bg-orange-50
+                  hover:text-orange-600
+                  sm:px-5
+                  sm:text-xs
+                "
               >
-                <span className="truncate">{selectedParent}</span>
-                <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3" className={`transition-transform shrink-0 ${isCategoryOpen ? "rotate-180" : ""}`}>
+                <span className="truncate">
+                  {selectedParent}
+                </span>
+
+                <svg
+                  width="12"
+                  height="12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  className={`shrink-0 transition-transform ${
+                    isCategoryOpen
+                      ? "rotate-180"
+                      : ""
+                  }`}
+                >
                   <path d="M2 4l4 4 4-4" />
                 </svg>
               </button>
 
-              {/* القائمة المنسدلة */}
+              {/* MOBILE FRIENDLY DROPDOWN */}
               <div
-                className={`absolute top-full left-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 transition-all duration-200 origin-top z-[70] py-3 w-64
-                  ${isCategoryOpen ? "opacity-100 scale-100 visible translate-y-0" : "opacity-0 scale-95 invisible -translate-y-2"}
+                className={`
+                  absolute
+                  left-0
+                  top-[calc(100%+10px)]
+                  z-[70]
+                  w-[92vw]
+                  max-w-[320px]
+                  overflow-hidden
+                  rounded-3xl
+                  border
+                  border-gray-100
+                  bg-white
+                  shadow-[0_30px_80px_rgba(0,0,0,.12)]
+                  transition-all
+                  duration-200
+                  sm:w-80
+                  ${
+                    isCategoryOpen
+                      ? "visible translate-y-0 opacity-100 scale-100"
+                      : "invisible -translate-y-2 opacity-0 scale-95"
+                  }
                 `}
               >
-                <button
-                  onClick={() => handleCategorySelect("Kategoriler")}
-                  className="w-full text-left px-4 py-2 text-xs font-black text-gray-400 hover:bg-orange-50 hover:text-orange-600 border-b border-gray-50"
-                >
-                  KATEGORİLER
-                </button>
-                <div className="max-h-[70vh] overflow-y-auto custom-scrollbar">
+                <div className="border-b border-gray-100 p-4">
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400">
+                    Kategoriler
+                  </h3>
+                </div>
+
+                <div className="max-h-[60vh] overflow-y-auto">
                   {categories.map((parent) => {
-                    const hasSub = hierarchy[parent]?.length > 0;
-                    const isActive = activeSubCategory === parent;
+                    const hasSub =
+                      hierarchy[parent]?.length > 0;
+
+                    const isActive =
+                      activeSubCategory === parent;
 
                     return (
-                      <div key={parent} className="border-b border-gray-50 last:border-0">
-                        <div className="flex items-center hover:bg-orange-50 group transition-colors">
-                          <button
-                            onClick={() => {
-                              if (hasSub) {
-                                setActiveSubCategory(isActive ? null : parent);
-                              } else {
-                                handleCategorySelect(parent);
-                              }
-                            }}
-                            className="flex-1 text-left px-5 py-4 text-sm font-bold text-gray-700 group-hover:text-orange-600 flex items-center justify-between"
-                          >
-                            <span>{parent}</span>
-                            {hasSub && (
-                              <svg 
-                                width="12" 
-                                height="12" 
-                                fill="none" 
-                                stroke="currentColor" 
-                                strokeWidth="3" 
-                                className={`transition-all duration-300 ${isActive ? "rotate-180 text-orange-500" : "rotate-0 text-gray-300"}`}
-                              >
-                                <path d="M2 4l4 4 4-4" />
-                              </svg>
-                            )}
-                          </button>
-                        </div>
+                      <div
+                        key={parent}
+                        className="border-b border-gray-50 last:border-0"
+                      >
+                        <button
+                          onClick={() => {
+                            if (hasSub) {
+                              setActiveSubCategory(
+                                isActive
+                                  ? null
+                                  : parent
+                              );
+                            } else {
+                              handleCategorySelect(
+                                parent
+                              );
+                            }
+                          }}
+                          className="
+                            flex
+                            w-full
+                            items-center
+                            justify-between
+                            px-5
+                            py-4
+                            text-left
+                            transition-all
+                            hover:bg-orange-50
+                          "
+                        >
+                          <span className="text-sm font-bold text-gray-700">
+                            {parent}
+                          </span>
+
+                          {hasSub && (
+                            <svg
+                              width="12"
+                              height="12"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              className={`transition-transform ${
+                                isActive
+                                  ? "rotate-180 text-orange-500"
+                                  : "text-gray-300"
+                              }`}
+                            >
+                              <path d="M2 4l4 4 4-4" />
+                            </svg>
+                          )}
+                        </button>
 
                         {isActive && hasSub && (
-                          <div className="bg-gray-50/80 py-1 animate-slide-down border-t border-gray-100">
-                            {/* Option to view all products in the parent category */}
-                            <button
-                              onClick={() => handleCategorySelect(parent)}
-                              className="w-full text-left pl-10 pr-5 py-3 text-[13px] font-black text-orange-500/70 hover:text-orange-600 hover:bg-orange-50 transition-colors flex items-center gap-2"
-                            >
-                              <span className="w-1 h-1 rounded-full bg-orange-500" />
-                              Tümünü Gör: {parent}
-                            </button>
-                            
-                            {hierarchy[parent].map((child) => (
-                              <button
-                                key={child}
-                                onClick={() => handleSubCategorySelect(parent, child)}
-                                className="w-full text-left pl-10 pr-5 py-3 text-[13px] font-semibold text-gray-500 hover:text-orange-600 hover:bg-orange-50 transition-colors"
-                              >
-                                {child}
-                              </button>
-                            ))}
+                          <div className="bg-gray-50/70 py-2">
+                            {hierarchy[parent].map(
+                              (child) => (
+                                <button
+                                  key={child}
+                                  onClick={() =>
+                                    handleSubCategorySelect(
+                                      parent,
+                                      child
+                                    )
+                                  }
+                                  className="
+                                    block
+                                    w-full
+                                    px-8
+                                    py-3
+                                    text-left
+                                    text-sm
+                                    font-semibold
+                                    text-gray-500
+                                    transition-all
+                                    hover:bg-orange-50
+                                    hover:text-orange-600
+                                  "
+                                >
+                                  {child}
+                                </button>
+                              )
+                            )}
                           </div>
                         )}
                       </div>
@@ -273,37 +439,141 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* حقل الإدخال: يأخذ بقية المساحة */}
-            <div ref={searchRef} className="flex-1 relative h-full flex items-center">
+            {/* SEARCH */}
+            <div
+              ref={searchRef}
+              className="
+                relative
+                flex
+                h-full
+                flex-1
+                items-center
+              "
+            >
+              {/* ICON */}
+              <div className="pl-3 text-gray-400">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle
+                    cx="11"
+                    cy="11"
+                    r="8"
+                  />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+              </div>
+
               <input
                 ref={searchInputRef}
                 type="text"
-                placeholder="Ara..."
+                placeholder="Ürün ara..."
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) =>
+                  setQuery(e.target.value)
+                }
                 onKeyDown={handleKeyDown}
-                className="w-full bg-transparent text-sm px-3 focus:outline-none text-gray-900 placeholder:text-gray-400 font-medium"
+                className="
+                  h-full
+                  w-full
+                  bg-transparent
+                  px-3
+                  text-[13px]
+                  font-semibold
+                  text-gray-900
+                  outline-none
+                  placeholder:text-gray-400
+                  sm:text-sm
+                "
               />
 
-              {/* اقتراحات البحث */}
-              {(suggestions.length > 0 || (isSearching && query.length > 1)) && (
-                <div className="absolute top-[calc(100%+8px)] right-0 w-[140%] sm:w-full bg-white rounded-2xl border border-gray-100 shadow-2xl overflow-hidden z-50">
-                   {isSearching ? (
-                    <div className="p-4 text-center text-xs text-gray-400">Yükleniyor...</div>
+              {/* SEARCH SUGGESTIONS */}
+              {(suggestions.length > 0 ||
+                (isSearching &&
+                  query.length > 1)) && (
+                <div
+                  className="
+                    absolute
+                    left-0
+                    top-[calc(100%+10px)]
+                    z-50
+                    w-[95vw]
+                    max-w-full
+                    overflow-hidden
+                    rounded-3xl
+                    border
+                    border-gray-100
+                    bg-white
+                    shadow-[0_25px_80px_rgba(0,0,0,.12)]
+                    sm:w-full
+                  "
+                >
+                  {isSearching ? (
+                    <div className="p-6 text-center">
+                      <div className="mx-auto mb-3 h-6 w-6 rounded-full border-2 border-orange-200 border-t-orange-500 animate-spin" />
+
+                      <p className="text-xs font-bold text-gray-400">
+                        Yükleniyor...
+                      </p>
+                    </div>
                   ) : (
                     suggestions.map((p) => (
                       <Link
                         key={p.id}
                         href={`/product/${p.id}`}
-                        onClick={() => setSuggestions([])}
-                        className="flex items-center gap-3 p-3 hover:bg-orange-50 border-b last:border-0 border-gray-50"
+                        onClick={() =>
+                          setSuggestions([])
+                        }
+                        className="
+                          flex
+                          items-center
+                          gap-3
+                          border-b
+                          border-gray-50
+                          p-3
+                          transition-all
+                          hover:bg-orange-50
+                        "
                       >
-                        <div className="w-8 h-8 relative rounded bg-gray-100 overflow-hidden shrink-0">
-                          {p.images?.[0] && <Image src={p.images[0]} alt={p.title} fill className="object-cover" />}
+                        <div
+                          className="
+                            relative
+                            h-14
+                            w-14
+                            overflow-hidden
+                            rounded-2xl
+                            bg-gray-100
+                            shrink-0
+                          "
+                        >
+                          {p.images?.[0] && (
+                            <Image
+                              src={p.images[0]}
+                              alt={p.title}
+                              fill
+                              className="object-cover"
+                            />
+                          )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[11px] font-bold text-gray-900 truncate">{p.title}</div>
-                          <div className="text-orange-500 font-bold text-[9px]">{formatPrice(p.current_price, p.currency)}</div>
+
+                        <div className="min-w-0 flex-1">
+                          <p className="line-clamp-2 text-xs font-bold text-gray-900 sm:text-sm">
+                            {p.title}
+                          </p>
+
+                          <p className="mt-1 text-sm font-black text-orange-500">
+                            {formatPrice(
+                              p.current_price,
+                              p.currency
+                            )}
+                          </p>
                         </div>
                       </Link>
                     ))
@@ -312,16 +582,48 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* زر البحث: أيقونة فقط في الموبايل لتوفير مساحة */}
+            {/* BUTTON */}
             <button
               onClick={handleSubmitSearch}
-              className="h-full px-3 sm:px-6 bg-orange-500 hover:bg-orange-600 text-white rounded-r-xl sm:rounded-r-2xl transition-all flex items-center justify-center shrink-0"
+              className="
+                flex
+                h-full
+                shrink-0
+                items-center
+                justify-center
+                rounded-r-2xl
+                bg-gradient-to-r
+                from-orange-500
+                to-red-500
+                px-4
+                text-white
+                shadow-[0_10px_25px_rgba(249,115,22,.25)]
+                transition-all
+                duration-300
+                hover:scale-[1.02]
+                hover:shadow-[0_15px_35px_rgba(249,115,22,.35)]
+                active:scale-95
+                sm:px-6
+              "
             >
               {isSearching ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
               ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8" />
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle
+                    cx="11"
+                    cy="11"
+                    r="8"
+                  />
                   <path d="m21 21-4.3-4.3" />
                 </svg>
               )}
