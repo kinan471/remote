@@ -1,21 +1,56 @@
-import { NextResponse } from "next/server";
-import { scrapeProduct } from "@/lib/scraper";
+/**
+ * YAKALA ULTRA SCRAPER ENGINE V2 - API LAYER: /api/scrape
+ * Endpoint to programmatically schedule intelligent scraping runs
+ */
+
+import { NextResponse } from 'next/server';
+import { enqueueScrapingJob } from '@/lib/scraper-engine/queue';
+import { ScraperPriority } from '@/types/scraper-engine';
 
 export async function POST(req: Request) {
   try {
-    const { url } = await req.json();
+    const { searchParams } = new URL(req.url);
+    const secret = searchParams.get('secret') || req.headers.get('Authorization')?.replace('Bearer ', '');
 
-    if (!url) {
-      return NextResponse.json({ error: "URL gerekli" }, { status: 400 });
+    // Secure authentication check
+    if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
+      return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
     }
 
-    const data = await scrapeProduct(url);
-    return NextResponse.json(data);
+    const body = await req.json().catch(() => ({}));
+    const url = body.url || searchParams.get('url');
+    const priority = (body.priority || searchParams.get('priority') || 'MEDIUM') as ScraperPriority;
+    const bypassCache = body.bypassCache === true || searchParams.get('bypassCache') === 'true';
+
+    if (!url) {
+      return NextResponse.json({ error: "Missing target 'url' parameter in request payload." }, { status: 400 });
+    }
+
+    // Schedule job via Priority Queuer
+    const result = await enqueueScrapingJob(url, priority, bypassCache);
+    
+    return NextResponse.json({
+      success: true,
+      jobId: result.jobId,
+      message: result.message
+    });
+
   } catch (err: any) {
-    console.error("Scrape API error:", err);
-    return NextResponse.json(
-      { error: err.message || "Ürün bilgileri çekilemedi." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
+}
+
+// Enable standard GET fallback for easy testing and cron triggers
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const mockReq = new Request(req.url, {
+    method: "POST",
+    headers: req.headers,
+    body: JSON.stringify({
+      url: searchParams.get('url'),
+      priority: searchParams.get('priority') || 'MEDIUM',
+      bypassCache: searchParams.get('bypassCache') === 'true'
+    })
+  });
+  return POST(mockReq);
 }
