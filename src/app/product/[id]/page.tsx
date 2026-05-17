@@ -229,9 +229,11 @@ export default function ProductPage() {
                 </div>
               )}
 
-              <div className="rounded-2xl bg-black/80 px-4 py-2 text-[11px] font-black text-white backdrop-blur-md">
-                ⚡ TREND SKOR {((product.rating * 2) + (product.is_lowest_price ? 1 : 0)).toFixed(1)}
-              </div>
+              {product.rating > 0 && (
+                <div className="rounded-2xl bg-black/80 px-4 py-2 text-[11px] font-black text-white backdrop-blur-md">
+                  ⭐ {product.rating.toFixed(1)} PUAN
+                </div>
+              )}
             </div>
 
             {/* image */}
@@ -280,7 +282,11 @@ export default function ProductPage() {
 
               <div>
                 <p className="text-sm font-black text-gray-900">
-                  Bu hafta <span className="text-orange-600">{product.click_count || 120}</span> kez görüntülendi
+                  Bu hafta{" "}
+                  <span className="text-orange-600">
+                    {product.click_count > 0 ? product.click_count : "--"}
+                  </span>{" "}
+                  kez görüntülendi
                 </p>
 
                 <p className="text-xs text-gray-500">
@@ -456,8 +462,13 @@ export default function ProductPage() {
                   </p>
 
                   <h3 className="mt-2 text-3xl font-black">
-                    {Math.min(10, Number((product.rating * 1.5 + (product.is_lowest_price ? 2.0 : 0.5) + (discount / 100) * 1.0).toFixed(1)))} / 10
+                    {Math.min(10, Number((
+                      (product.rating || 0) * 1.5 +
+                      (product.is_lowest_price ? 2.0 : 0.5) +
+                      (discount / 100) * 1.0
+                    ).toFixed(1)))} / 10
                   </h3>
+                  <p className="mt-1 text-[10px] text-white/60 uppercase tracking-widest">Tahmini Skor</p>
                 </div>
 
                 <div className="text-5xl">
@@ -565,15 +576,17 @@ export default function ProductPage() {
                   </div>
 
                   <div className="rounded-2xl bg-gray-50 p-4">
-                    <p className="text-sm font-bold text-gray-600">
-                      Piyasa fiyatı:
-                      <span className="ml-2 text-red-500 line-through">
-                        {formatPrice(product.original_price * 1.15, product.currency)}
-                      </span>
-                    </p>
+                    {product.original_price > 0 && (
+                      <p className="text-sm font-bold text-gray-600">
+                        Liste fiyatı:
+                        <span className="ml-2 text-red-500 line-through">
+                          {formatPrice(product.original_price, product.currency)}
+                        </span>
+                      </p>
+                    )}
 
                     <p className="mt-2 text-sm font-black text-emerald-600">
-                      Bugünkü fırsat:
+                      Bugünkü fiyat:
                       <span className="ml-2">
                         {formatPrice(
                           product.current_price,

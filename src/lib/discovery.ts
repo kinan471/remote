@@ -29,8 +29,17 @@ const CATEGORY_KEYWORDS = [
 ];
 
 const IGNORED_KEYWORDS = [
-  "privacy", "contact", "about", "help", "account", "login", "kvkk", "yardim", "destek", "iade", "cerez", "membership", 
-  "giyim", "ayakkabi", "moda", "parfum", "kozmetik", "aksesuar", "kilif", "kablo" // استبعاد الإكسسوارات والملابس
+  // System/Legal pages
+  "privacy", "contact", "about", "help", "account", "login", "kvkk", "yardim", "destek", "iade", "cerez", "membership",
+  // Fashion & Accessories (not tech)
+  "giyim", "ayakkabi", "moda", "parfum", "kozmetik", "aksesuar", "kilif", "kablo",
+  // Baby & Diaper products - استبعاد منتجات الأطفال والحفوضات
+  "bebek", "cocuk", "çocuk", "bez", "kulot-bez", "külot-bez", "alt-acma", "islak-mendil",
+  "pampers", "sleepy", "molfix", "huggies", "bebiko", "mamurlu", "emzik", "mama",
+  // Grocery & Food
+  "gida", "gıda", "market", "supermarket", "atistirmalik", "icecek",
+  // Clothing
+  "tisort", "pantolon", "elbise", "gomlek", "gomlek", "ic-giyim", "sutyen", "corap"
 ];
 
 /**
@@ -178,21 +187,34 @@ export async function processQueue(limit = 15) {
       }
 
       // Smart Fingerprinting & Deduplication Engine
-      const words = product.title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').split(/\s+/);
+      // Normalize Turkish/special chars so same product from 2 platforms = same fingerprint
+      const normalizeTitle = (t: string) => t
+        .toLowerCase()
+        .replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's')
+        .replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ç/g, 'c')
+        .replace(/[^a-z0-9\s]/g, ' ')  // keep spaces, remove special chars
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      const normalized = normalizeTitle(product.title);
+      const words = normalized.split(' ').filter(w => w.length > 1);
       const brand = words[0] || "unknown";
       
-      // Look for a Manufacturer Part Number (MPN) - typically 10+ chars, mixed letters and numbers
-      const partNumber = words.find(w => w.length >= 10 && /[a-z]/.test(w) && /[0-9]/.test(w));
+      // Look for a Manufacturer Part Number (MPN) - typically 6+ chars, mixed letters and numbers
+      // e.g. "FA507NVR", "LP005A17", "SM-G998B"
+      const partNumber = words.find(w => 
+        w.length >= 6 && /[a-z]/.test(w) && /[0-9]/.test(w)
+      );
       
       let baseFingerprint = "";
       if (partNumber) {
-        // If a unique part number exists (e.g. FA507NVR-LP005A17), it uniquely identifies the exact spec
+        // MPN uniquely identifies the exact product spec
         baseFingerprint = `${brand}-${partNumber}`;
       } else {
-        // Fallback for phones/items without MPNs (e.g. "Apple iPhone 15 Pro Max 256GB")
-        baseFingerprint = words.slice(0, 5).join("");
+        // Fallback: use first 6 meaningful words (brand + model keywords)
+        baseFingerprint = words.slice(0, 6).join("-");
       }
-      const fingerprint = btoa(baseFingerprint).substring(0, 50);
+      const fingerprint = btoa(unescape(encodeURIComponent(baseFingerprint))).substring(0, 50);
 
       // Omit review_count since it does not exist as a column in the user's active products table
       const { review_count, ...productToInsert } = product as any;

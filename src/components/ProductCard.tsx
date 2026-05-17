@@ -126,12 +126,14 @@ const ProductCard = memo(function ProductCard({
         )}
       </div>
 
-      {/* TREND SCORE */}
-      <div className="absolute top-3 right-3 z-30">
-        <div className="rounded-full bg-black/80 backdrop-blur-md px-3 py-1.5 text-[10px] font-black text-white shadow-xl">
-          🔥 {((product.rating * 2) + (product.is_lowest_price ? 1 : 0)).toFixed(1)} SKOR
+      {/* PLATFORM SCORE - only show real rating */}
+      {product.rating > 0 && (
+        <div className="absolute top-3 right-3 z-30">
+          <div className="rounded-full bg-black/80 backdrop-blur-md px-3 py-1.5 text-[10px] font-black text-white shadow-xl">
+            ⭐ {product.rating.toFixed(1)}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* IMAGE */}
       <Link
@@ -288,13 +290,15 @@ const ProductCard = memo(function ProductCard({
           </p>
         </div>
 
-        {/* REAL CLICK COUNT */}
-        <div className="flex items-center gap-2 px-1">
-          <span className="text-xs">👁️</span>
-          <p className="text-[11px] font-bold text-gray-500">
-            Bu hafta <span className="text-orange-600 font-black">{product.click_count || 120}</span> kez görüntülendi
-          </p>
-        </div>
+        {/* REAL CLICK COUNT - only show if we have real data */}
+        {product.click_count > 0 && (
+          <div className="flex items-center gap-2 px-1">
+            <span className="text-xs">👁️</span>
+            <p className="text-[11px] font-bold text-gray-500">
+              Bu hafta <span className="text-orange-600 font-black">{product.click_count}</span> kez görüntülendi
+            </p>
+          </div>
+        )}
 
         {/* CTA */}
         <div className="mt-auto flex gap-2 pt-2">
