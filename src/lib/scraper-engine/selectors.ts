@@ -3,9 +3,11 @@
  * Dynamic selector lookup, automatic fallback, and self-learning mechanics
  */
 
+import * as cheerio from 'cheerio';
 import { supabase } from '@/lib/supabase';
 import { PlatformType, SelectorType, SelectorRecord } from '@/types/scraper-engine';
 import { ENGINE_CONFIG } from './config';
+import { normalizePrice } from './validation';
 
 // In-Memory selector cache to limit database query load
 const SELECTOR_CACHE: Record<string, string[]> = {};
@@ -134,9 +136,14 @@ export async function logSelectorFailure(platform: PlatformType, type: SelectorT
 }
 
 /**
- * Self-Learning Engine: Learns candidate selectors dynamically based on Cheerio HTML structure
+ * Self-Learning Engine: Analyzes page DOM dynamically using Cheerio to extract new CSS paths
  */
-export function learnNewSelectors(htmlContent: string, platform: PlatformType, parsedTitle: string): Record<SelectorType, string[]> {
+export function learnNewSelectors(
+  htmlContent: string, 
+  platform: PlatformType, 
+  parsedTitle: string,
+  parsedPrice?: number
+): Record<SelectorType, string[]> {
   const candidates: Record<SelectorType, string[]> = {
     title: [],
     price: [],
@@ -145,18 +152,49 @@ export function learnNewSelectors(htmlContent: string, platform: PlatformType, p
     specs: []
   };
 
-  // Skip parsing if page is empty
   if (!htmlContent) return candidates;
 
   try {
-    // Very simple heuristics for learning selectors from raw HTML strings if needed
-    // Matches classes or elements containing 'price', 'prc', 'title' to register candidate selectors
-    if (htmlContent.includes('class="prc') || htmlContent.includes('class="price')) {
-      candidates.price.push('.price');
-      candidates.price.push('.prc-dsc');
+    const $ = cheerio.load(htmlContent);
+
+    // 1. Dynamic Title Selector Heuristic
+    if (parsedTitle) {
+      $('*').each((_, elem) => {
+        const text = $(elem).text().trim();
+        if (text === parsedTitle) {
+          const tagName = (elem as any).name || 'div';
+          const className = $(elem).attr('class')?.trim().split(/\s+/)[0];
+          const id = $(elem).attr('id')?.trim();
+
+          if (id) {
+            candidates.title.push(`${tagName}#${id}`);
+          } else if (className) {
+            candidates.title.push(`${tagName}.${className}`);
+          }
+        }
+      });
     }
-  } catch {
-    // Robustness
+
+    // 2. Dynamic Price Selector Heuristic
+    if (parsedPrice && parsedPrice > 0) {
+      $('*').each((_, elem) => {
+        const text = $(elem).text().trim();
+        const cleanedPrice = normalizePrice(text);
+        if (cleanedPrice === parsedPrice) {
+          const tagName = (elem as any).name || 'div';
+          const className = $(elem).attr('class')?.trim().split(/\s+/)[0];
+          const id = $(elem).attr('id')?.trim();
+
+          if (id) {
+            candidates.price.push(`${tagName}#${id}`);
+          } else if (className) {
+            candidates.price.push(`${tagName}.${className}`);
+          }
+        }
+      });
+    }
+  } catch (err: any) {
+    console.error("[Self-Learning] Selector learning failed:", err.message);
   }
 
   return candidates;

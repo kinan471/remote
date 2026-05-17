@@ -10,6 +10,7 @@ import { extractJsonLd, extractCss, extractRegex, extractAi, extractVision } fro
 import { validatePriceIntegrity, normalizePrice } from './validation';
 import { generateContentHash, isPageUnchanged, updatePageHash, logScrapingExecution, persistScrapedProduct } from './db';
 import { getPlatformFromUrl } from './config';
+import { learnNewSelectors, logSelectorSuccess } from './selectors';
 
 export interface CrawlEngineResult {
   success: boolean;
@@ -160,6 +161,25 @@ export async function runScraperEngine(url: string, bypassCache = false): Promis
     const persisted = await persistScrapedProduct(productPayload, finalConfidence);
     if (!persisted) {
       throw new Error("Failed to write validated product to Supabase storage cache.");
+    }
+
+    // 7. Dynamic Self-Learning Trigger: If AI or Vision succeeded with high confidence, analyze DOM to learn working CSS selectors!
+    if ((bestCandidate.extractor === 'AI-Fallback' || bestCandidate.extractor === 'Vision-OCR') && finalConfidence >= 0.8) {
+      console.log(`[Self-Learning] Initiating DOM analysis loop to extract candidate CSS tags for ${platform}...`);
+      const learned = learnNewSelectors(
+        fetchResult.html,
+        platform,
+        productPayload.title,
+        productPayload.current_price
+      );
+      
+      // Auto-save learned selectors
+      for (const sel of learned.title) {
+        await logSelectorSuccess(platform, 'title', sel);
+      }
+      for (const sel of learned.price) {
+        await logSelectorSuccess(platform, 'price', sel);
+      }
     }
 
     finalProduct = productPayload;
