@@ -7,7 +7,9 @@ const FIRECRAWL_API_KEY = process.env.FIRECRAWL_API_KEY!;
 const DOMAINS = [
   { platform: "trendyol", url: "https://www.trendyol.com" },
   { platform: "hepsiburada", url: "https://www.hepsiburada.com" },
-  { platform: "amazon", url: "https://www.amazon.com.tr" }
+  { platform: "n11", url: "https://www.n11.com" },
+  { platform: "gittigidiyor", url: "https://www.gittigidiyor.com" },
+  { platform: "teknosa", url: "https://www.teknosa.com" }
 ];
 
 const DISCOUNT_KEYWORDS = [

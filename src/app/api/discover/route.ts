@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { discoverViaSitemap, processQueue } from "@/lib/discovery";
+import { supabase } from "@/lib/supabase";
 
 export async function POST(req: Request) {
   try {
@@ -44,7 +45,6 @@ export async function POST(req: Request) {
 
     if (action === "reset") {
       console.log("[API] Triggering Database Reset...");
-      const { supabase } = require("@/lib/supabase");
       
       // 1. Reset pending scrapes
       const { error: resetErr } = await supabase
