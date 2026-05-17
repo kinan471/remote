@@ -132,6 +132,27 @@ export async function processQueue(limit = 3) {
       
       const product = await scrapeProduct(task.url);
       
+      // Strict product validation checks
+      const titleLower = product.title.toLowerCase();
+      const isBlocked = [
+        "üzgünüz", "sorry", "access denied", "robot", "captcha", "security check", 
+        "sayfa bulunamadı", "giriş yap", "oturum aç", "404", "error", "sitemiz", "bulunamadı"
+      ].some(kw => titleLower.includes(kw));
+
+      if (isBlocked) {
+        throw new Error("Scraped page is a block or error page instead of a real product.");
+      }
+
+      if (product.current_price <= 0) {
+        throw new Error("Scraped price is zero or invalid.");
+      }
+
+      // Tech product validation (premium laptops/monitors/phones cannot be priced suspiciously low)
+      const isTech = ["laptop", "dizüstü", "bilgisayar", "telefon", "akıllı telefon", "tablet", "süpürge", "tv", "televizyon", "playstation", "xbox", "monitor", "ekran kartı", "monitör"].some(kw => titleLower.includes(kw));
+      if (isTech && product.current_price < 500) {
+        throw new Error(`Scraped price for technology product is suspiciously low: ${product.current_price} TL`);
+      }
+
       // Smart Fingerprinting & Upsert to Products
       const fingerprint = btoa(`${product.title}-${product.category}`).substring(0, 50);
 

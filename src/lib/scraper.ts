@@ -110,7 +110,7 @@ export async function scrapeProduct(url: string) {
       formats: ["extract"],
       waitFor: 3000,
       extract: {
-        prompt: "Extract the product name, final sale price (with full decimal value, e.g. 149.90), original price before discount, a detailed description, overall customer rating (0-5), high-quality product image URLs, hierarchical category path (e.g. 'Electronics > Smartphones'), items left in stock, and the COMPLETE technical specifications table as key-value pairs.",
+        prompt: "Extract the real product name (must be a valid product title, reject error pages like 'Üzgünüz', 'Sorry', 'Access Denied', or '404'), principal final selling price of the item (MUST ignore monthly installment values, shipping fees, or secondary options. MUST extract the total main item price, e.g. 34500.00. NEVER return installment starting rates like 79 or 0), original price before discount, a detailed description, overall customer rating (0-5), high-quality product image URLs, hierarchical category path (e.g. 'Electronics > Smartphones'), items left in stock, and the COMPLETE technical specifications table as key-value pairs.",
         schema: {
           type: "object",
           properties: {
