@@ -131,6 +131,23 @@ export default function AdminDashboard() {
     });
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm("Bu ürünü silmek istediğinize emin misiniz?")) return;
+    try {
+      const res = await fetch(`/api/products/${id}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        setProducts(prev => prev.filter(p => p.id !== id));
+        alert("Ürün başarıyla silindi!");
+      } else {
+        alert("Ürün silinirken bir hata oluştu!");
+      }
+    } catch {
+      alert("Bağlantı hatası!");
+    }
+  };
+
   const updateSettings = async (key: string, value: string) => {
     setSettingsLoading(true);
     try {
@@ -386,6 +403,12 @@ export default function AdminDashboard() {
                               }`}
                             >
                               {product.is_active ? "Gizle" : "Göster"}
+                            </button>
+                            <button
+                              onClick={() => handleDelete(product.id)}
+                              className="text-[10px] px-3 py-2 rounded-xl bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 font-black uppercase tracking-widest transition-all"
+                            >
+                              Sil
                             </button>
 
                           </div>

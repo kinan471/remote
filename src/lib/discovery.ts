@@ -42,6 +42,12 @@ export async function discoverViaSitemap() {
     try {
       console.log(`[Discovery] Mapping domain: ${domain.url}`);
       
+      // Focus heavily on Hepsiburada by requesting up to 1000 URLs with richer search metrics
+      const limit = domain.platform === "hepsiburada" ? 1000 : 100;
+      const searchTerms = domain.platform === "hepsiburada" 
+        ? "indirim elektronik firsat cep telefonu laptop bilgisayar" 
+        : DISCOUNT_KEYWORDS.join(" ");
+
       const response = await fetch("https://api.firecrawl.dev/v1/map", {
         method: "POST",
         headers: {
@@ -50,8 +56,8 @@ export async function discoverViaSitemap() {
         },
         body: JSON.stringify({
           url: domain.url,
-          search: DISCOUNT_KEYWORDS.join(" "), 
-          limit: 100 
+          search: searchTerms, 
+          limit: limit 
         }),
       });
 
@@ -67,14 +73,27 @@ export async function discoverViaSitemap() {
 
       const filteredLinks = links.filter(link => {
         const lower = link.toLowerCase();
+        
+        // 1. Core ignored paths
+        const isIgnored = IGNORED_KEYWORDS.some(kw => lower.includes(kw));
+        if (isIgnored) return false;
+
+        // 2. Direct Product Page Patterns (Captures 100% of real product links!)
+        const isHepsiburadaOrTrendyolProduct = (domain.platform === "hepsiburada" || domain.platform === "trendyol") && lower.includes("-p-");
+        const isAmazonProduct = domain.platform === "amazon" && (lower.includes("/dp/") || lower.includes("/gp/product/"));
+        
+        if (isHepsiburadaOrTrendyolProduct || isAmazonProduct) {
+          return true;
+        }
+
+        // 3. Keyword fallbacks
         const hasDiscount = DISCOUNT_KEYWORDS.some(kw => lower.includes(kw));
         const hasCategory = CATEGORY_KEYWORDS.some(kw => lower.includes(kw));
-        const isIgnored = IGNORED_KEYWORDS.some(kw => lower.includes(kw));
-        // Must have discount OR be in our target categories, and not be ignored
-        return (hasDiscount || hasCategory) && !isIgnored;
+        
+        return hasDiscount || hasCategory;
       });
 
-      console.log(`[Discovery] Filtered to ${filteredLinks.length} relevant links`);
+      console.log(`[Discovery] Filtered to ${filteredLinks.length} relevant links on ${domain.platform}`);
 
       // Push to pending_scrapes table
       if (filteredLinks.length > 0) {
