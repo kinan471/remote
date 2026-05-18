@@ -9,7 +9,6 @@ const DOMAINS = [
   { platform: "trendyol", url: "https://www.trendyol.com" },
   { platform: "hepsiburada", url: "https://www.hepsiburada.com" },
   { platform: "n11", url: "https://www.n11.com" },
-  { platform: "gittigidiyor", url: "https://www.gittigidiyor.com" },
 ];
 
 const DISCOUNT_KEYWORDS = [
@@ -90,22 +89,29 @@ export async function discoverViaSitemap() {
         const isIgnored = IGNORED_KEYWORDS.some(kw => lower.includes(kw));
         if (isIgnored) return false;
 
-        // 2. Direct Product Page Patterns (Captures 100% of real product links!)
-        const isHepsiburadaOrTrendyolProduct = (domain.platform === "hepsiburada" || domain.platform === "trendyol") && lower.includes("-p-");
-        const isAmazonProduct = domain.platform === "amazon" && (lower.includes("/dp/") || lower.includes("/gp/product/"));
+        // 2. Strict Product Page Patterns (Captures REAL product links only)
+        if (domain.platform === "trendyol" && /-p-\d+/.test(lower)) {
+          return true;
+        }
         
-        if (isHepsiburadaOrTrendyolProduct || isAmazonProduct) {
+        if (domain.platform === "hepsiburada" && /-p-hbcv[a-z0-9]+/i.test(lower)) {
           return true;
         }
 
-        // 3. Keyword fallbacks
-        const hasDiscount = DISCOUNT_KEYWORDS.some(kw => lower.includes(kw));
-        const hasCategory = CATEGORY_KEYWORDS.some(kw => lower.includes(kw));
-        
-        return hasDiscount || hasCategory;
+        if (domain.platform === "n11" && /-p\d+/i.test(lower)) {
+          return true; // e.g. n11 product links end with -PXXXXX usually, or -pXXXXX
+        }
+
+        if (domain.platform === "amazon" && /\/dp\/[a-z0-9]+/i.test(lower)) {
+          return true;
+        }
+
+        // Drop anything else (categories, campaigns, landing pages)
+        return false;
       });
 
-      console.log(`[Discovery] Filtered to ${filteredLinks.length} relevant links on ${domain.platform}`);
+      console.log(`[Discovery] Sample filtered links (first 50):`, filteredLinks.slice(0, 50));
+      console.log(`[Discovery] Filtered to ${filteredLinks.length} strict product links on ${domain.platform}`);
 
       // Push to pending_scrapes table
       if (filteredLinks.length > 0) {
@@ -139,7 +145,7 @@ export async function discoverViaSitemap() {
  * PHASE 2: WORKER
  * Processes the queue in parallel with a concurrency limit.
  */
-export async function processQueue(limit = 15) {
+export async function processQueue(limit = 3) {
   console.log(`[Worker] Processing queue with batch size limit: ${limit}`);
   
   // 1. Get pending and failed tasks (with retry limit)
@@ -193,7 +199,11 @@ export async function processQueue(limit = 15) {
       await supabase.from("pending_scrapes").update({ status: "completed" }).eq("id", task.id);
       return true;
     } catch (err: any) {
-      console.error(`[Worker] Failed task ${task.url}:`, err.message);
+      console.error("[Worker] Detailed Error Log:", {
+        url: task.url,
+        error: err.message,
+        stack: err.stack
+      });
       await supabase.from("pending_scrapes").update({ 
         status: "failed", 
         last_error: err.message,
