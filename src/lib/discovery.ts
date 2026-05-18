@@ -147,7 +147,7 @@ export async function processQueue(limit = 15) {
     .from("pending_scrapes")
     .select("*")
     .in("status", ["pending", "failed"])
-    .lt("attempts", 3)
+    .or("attempts.lt.3,attempts.is.null")
     .order("status", { ascending: false }) // prioritize pending over failed
     .limit(limit); // Batch size
 
@@ -186,21 +186,8 @@ export async function processQueue(limit = 15) {
         throw new Error(`Scraped price for technology product is suspiciously low: ${product.current_price} TL`);
       }
 
-      // Unified Deduplication: use generateProductFingerprint (same as scraper-engine/db.ts)
-      const fingerprint = generateProductFingerprint(product.title);
-
-      // Omit review_count since it does not exist as a column in the user's active products table
-      const { review_count, ...productToInsert } = product as any;
-
-      const { error: upsertError } = await supabase
-        .from("products")
-        .upsert([{
-          ...productToInsert,
-          fingerprint,
-          updated_at: new Date().toISOString()
-        }], { onConflict: "source_url" }); // source_url is the strongest dedup key
-
-      if (upsertError) throw upsertError;
+      // Product is already persisted by scrapeProduct -> runScraperEngine.
+      // We just validated it further above. If it was invalid, it would have thrown and been marked failed.
 
       // Mark as completed
       await supabase.from("pending_scrapes").update({ status: "completed" }).eq("id", task.id);

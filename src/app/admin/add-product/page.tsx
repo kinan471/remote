@@ -109,7 +109,7 @@ export default function AddProductPage() {
     setScrapeError("");
     setScraped(null);
     try {
-      const res = await fetch("/api/scrape?secret=yakala2024", {
+      const res = await fetch("/api/scrape?secret=yakala2024&sync=true", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),

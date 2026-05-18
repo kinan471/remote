@@ -29,6 +29,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing target 'url' parameter in request payload." }, { status: 400 });
     }
 
+    const syncParam = searchParams.get('sync') === 'true' || body.sync === true;
+
+    if (syncParam) {
+      const { scrapeProduct } = await import('@/lib/scraper');
+      const product = await scrapeProduct(url);
+      return NextResponse.json(product);
+    }
+
     // Schedule job via Priority Queuer
     const result = await enqueueScrapingJob(url, priority, bypassCache);
     

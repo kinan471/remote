@@ -158,14 +158,19 @@ export async function persistScrapedProduct(product: ScrapedProduct, confidenceS
       updated_at: new Date().toISOString()
     };
 
-    const { data, error } = await supabase
-      .from('products')
-      .upsert([upsertPayload], { onConflict: 'source_url' })
-      .select('id')
-      .single();
+    let data, error;
+    if (existing) {
+      const res = await supabase.from('products').update(upsertPayload).eq('id', existing.id).select('id').single();
+      data = res.data;
+      error = res.error;
+    } else {
+      const res = await supabase.from('products').insert([upsertPayload]).select('id').single();
+      data = res.data;
+      error = res.error;
+    }
 
     if (error) {
-      console.error("[Persist] Upsert error:", error.message);
+      console.error("[Persist] Insert/Update error:", error.message);
       return false;
     }
 
