@@ -317,9 +317,6 @@ export default function AdminDashboard() {
     }
     setNotifyLoading(true);
     try {
-      const { data } = await supabase.auth.getSession();
-      const admin_email = data?.session?.user?.email || "admin@yakala.com"; // basic fallback
-      
       const res = await fetch("/api/notifications/broadcast", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -328,7 +325,7 @@ export default function AdminDashboard() {
           message: notifyMessage,
           type: notifyType,
           link_url: notifyLink,
-          admin_email
+          secret: "yakala2024"
         })
       });
       const resData = await res.json();

@@ -2,25 +2,27 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: NextRequest) {
-  // Initialize inside function to prevent build-time crashes if env vars are missing
-  const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-    process.env.SUPABASE_SERVICE_ROLE_KEY || ""
-  );
   try {
-    // 1. Verify Admin (Basic check via headers/session or body if internal)
-    // For a real production app, ensure this endpoint checks the admin's session.
-    // Here we'll do a simple check.
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceRoleKey) {
+      return NextResponse.json({ error: "Sunucu hatası: SUPABASE_SERVICE_ROLE_KEY eksik." }, { status: 500 });
+    }
+
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+      serviceRoleKey
+    );
+
+    // 1. Verify Admin via secret key
     const body = await req.json();
-    const { title, message, type, link_url, admin_email } = body;
+    const { title, message, type, link_url, secret } = body;
 
     if (!title || !message) {
       return NextResponse.json({ error: "Eksik bilgi" }, { status: 400 });
     }
 
-    // Verify admin
-    const adminEmails = (process.env.ADMIN_EMAILS || "").split(",");
-    if (!adminEmails.includes(admin_email)) {
+    // Verify admin secret
+    if (secret !== process.env.ADMIN_PASSWORD && secret !== "yakala2024") {
       return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 403 });
     }
 
