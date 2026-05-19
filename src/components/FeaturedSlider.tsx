@@ -6,6 +6,10 @@ import Image from "next/image";
 
 export default function FeaturedSlider({ products }: { products: Product[] }) {
   const [current, setCurrent] = useState(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const minSwipeDistance = 50;
 
   useEffect(() => {
     if (products.length <= 1) return;
@@ -17,8 +21,35 @@ export default function FeaturedSlider({ products }: { products: Product[] }) {
 
   if (products.length === 0) return null;
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      setCurrent((prev) => (prev + 1) % products.length);
+    } else if (isRightSwipe) {
+      setCurrent((prev) => (prev - 1 + products.length) % products.length);
+    }
+  };
+
   return (
-    <div className="relative w-full overflow-hidden sm:rounded-3xl bg-[#EAEDED] mt-6 mb-8 group">
+    <div 
+      className="relative w-full overflow-hidden sm:rounded-3xl bg-[#EAEDED] mt-6 mb-8 group touch-pan-y"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <div 
         className="flex transition-transform duration-700 ease-in-out"
         style={{ transform: `translateX(-${current * 100}%)` }}
@@ -69,16 +100,16 @@ export default function FeaturedSlider({ products }: { products: Product[] }) {
         ))}
       </div>
 
-      {/* Navigation Arrows */}
+      {/* Navigation Arrows - hidden on mobile (hidden on screens smaller than md) */}
       <button 
         onClick={() => setCurrent((prev) => (prev - 1 + products.length) % products.length)}
-        className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 hover:bg-white/40 backdrop-blur-md rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 hover:bg-white/40 backdrop-blur-md rounded-full hidden md:flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
       >
         <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M15 18l-6-6 6-6" /></svg>
       </button>
       <button 
         onClick={() => setCurrent((prev) => (prev + 1) % products.length)}
-        className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 hover:bg-white/40 backdrop-blur-md rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 hover:bg-white/40 backdrop-blur-md rounded-full hidden md:flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
       >
         <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M9 18l6-6-6-6" /></svg>
       </button>

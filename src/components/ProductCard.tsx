@@ -20,6 +20,7 @@ const ProductCard = memo(function ProductCard({
   variant = "default",
 }: ProductCardProps) {
   const [imgError, setImgError] = useState(false);
+  const [isInCompare, setIsInCompare] = useState(false);
 
   const discount = getDiscountPercent(
     product.original_price || 0,
@@ -29,6 +30,74 @@ const ProductCard = memo(function ProductCard({
   const imgSrc = !imgError
     ? getProductImage(product)
     : `https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800`;
+
+  useState(() => {
+    // Initial check
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("yakala_compare_list");
+      if (saved) {
+        try {
+          const list = JSON.parse(saved);
+          setIsInCompare(list.some((item: any) => item.id === product.id));
+        } catch (e) {}
+      }
+    }
+  });
+
+  useState(() => {
+    if (typeof window !== "undefined") {
+      const checkCompare = () => {
+        const saved = localStorage.getItem("yakala_compare_list");
+        if (saved) {
+          try {
+            const list = JSON.parse(saved);
+            setIsInCompare(list.some((item: any) => item.id === product.id));
+          } catch (e) {
+            setIsInCompare(false);
+          }
+        } else {
+          setIsInCompare(false);
+        }
+      };
+      window.addEventListener("yakala-compare-changed", checkCompare);
+      return () => window.removeEventListener("yakala-compare-changed", checkCompare);
+    }
+  });
+
+  const toggleCompare = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const saved = localStorage.getItem("yakala_compare_list");
+    let list = [];
+    if (saved) {
+      try {
+        list = JSON.parse(saved);
+      } catch (e) {}
+    }
+
+    const exists = list.some((item: any) => item.id === product.id);
+    if (exists) {
+      list = list.filter((item: any) => item.id !== product.id);
+    } else {
+      if (list.length >= 3) {
+        alert("En fazla 3 ürünü karşılaştırabilirsiniz.");
+        return;
+      }
+      list.push({
+        id: product.id,
+        title: product.title,
+        price: product.current_price,
+        original_price: product.original_price,
+        image: getProductImage(product),
+        source_platform: product.source_platform,
+        currency: product.currency || "TRY"
+      });
+    }
+
+    localStorage.setItem("yakala_compare_list", JSON.stringify(list));
+    window.dispatchEvent(new Event("yakala-compare-changed"));
+  };
 
   return (
     <div
@@ -57,9 +126,22 @@ const ProductCard = memo(function ProductCard({
 
       {/* IMAGE SECTION */}
       <div className="relative aspect-[4/5] w-full bg-white flex items-center justify-center p-4">
+        {/* Compare Toggle Button */}
+        <button 
+          className={`absolute top-2 left-2 z-20 w-7 h-7 rounded-full shadow-sm transition-all duration-300 border flex items-center justify-center active:scale-90 ${
+            isInCompare 
+              ? "bg-orange-500 text-white border-orange-500 scale-105" 
+              : "bg-white/80 text-gray-400 hover:text-orange-500 border-gray-100"
+          }`}
+          onClick={toggleCompare}
+          title="Karşılaştır"
+        >
+          <span className="text-[11px] font-bold leading-none">⚖️</span>
+        </button>
+
         {/* Top Badges */}
         {discount > 0 && (
-          <div className="absolute top-2 left-2 z-20">
+          <div className="absolute top-2 left-10 z-20">
             <div className="bg-[#FF6000] text-white text-[9px] font-black px-2 py-1 rounded-full shadow-sm">
               AVANTAJLI
             </div>

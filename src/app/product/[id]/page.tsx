@@ -8,6 +8,7 @@ import {
   getDiscountPercent,
   Product,
   getProductGalleryImages,
+  getProductImage,
 } from "@/lib/supabase";
 
 import { computeDealScore, getSignalClasses } from "@/lib/deal-score";
@@ -44,6 +45,9 @@ export default function ProductPage() {
 
   const [isTracking, setIsTracking] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
+  const [aiReport, setAiReport] = useState<any>(null);
+  const [aiReportLoading, setAiReportLoading] = useState(false);
 
   useEffect(() => {
     if (product && typeof window !== "undefined") {
@@ -57,6 +61,31 @@ export default function ProductPage() {
       }
     }
   }, [product]);
+
+  useEffect(() => {
+    if (!product) return;
+
+    async function fetchAiReport() {
+      setAiReportLoading(true);
+      try {
+        const res = await fetch("/api/product-ai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ product }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setAiReport(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch product AI analysis:", error);
+      } finally {
+        setAiReportLoading(false);
+      }
+    }
+
+    fetchAiReport();
+  }, [product?.id]);
 
   useEffect(() => {
     if (!id) return;
@@ -79,6 +108,19 @@ export default function ProductPage() {
           ...productData,
           price_history: priceHistory || []
         } as any);
+
+        // Fetch similar products in the same category
+        const { data: similar } = await supabase
+          .from("products")
+          .select("*")
+          .eq("is_active", true)
+          .eq("category", productData.category)
+          .neq("id", productData.id)
+          .limit(3);
+
+        if (similar) {
+          setSimilarProducts(similar as Product[]);
+        }
       }
 
       setLoading(false);
@@ -338,6 +380,94 @@ export default function ProductPage() {
                 className="h-5"
               />
             </div>
+
+            {/* YAKALA AI SHOPPING ADVISOR */}
+            {aiReportLoading ? (
+              <div className="mt-8 rounded-[32px] border border-orange-100 bg-white p-6 shadow-sm sm:p-8 animate-pulse space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-orange-100 flex items-center justify-center text-xl">🤖</div>
+                  <div className="space-y-2 flex-1">
+                    <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-3 w-48 bg-gray-100 rounded animate-pulse" />
+                  </div>
+                </div>
+                <div className="h-px bg-gray-100 w-full" />
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-full animate-pulse" />
+                  <div className="h-4 bg-gray-200 rounded w-5/6 animate-pulse" />
+                  <div className="h-4 bg-gray-200 rounded w-4/5 animate-pulse" />
+                </div>
+              </div>
+            ) : aiReport ? (
+              <div className="mt-8 rounded-[32px] border border-orange-100 bg-white p-6 shadow-sm sm:p-8 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50/50 rounded-full blur-2xl pointer-events-none" />
+                
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-xl">🤖</div>
+                    <div>
+                      <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest leading-none">YakalaAI Asistanı</h4>
+                      <span className="text-[10px] font-bold text-gray-400">Akıllı Alışveriş Raporu</span>
+                    </div>
+                  </div>
+                  
+                  {/* Advice Badge */}
+                  <span className={`px-3 py-1.5 rounded-xl text-xs font-black tracking-wide ${
+                    aiReport.advice?.includes("AL")
+                      ? "bg-green-50 text-green-700 border border-green-100 animate-pulse"
+                      : aiReport.advice?.includes("BEKLE")
+                      ? "bg-red-50 text-red-700 border border-red-100"
+                      : "bg-amber-50 text-amber-700 border border-amber-100"
+                  }`}>
+                    {aiReport.advice}
+                  </span>
+                </div>
+
+                <div className="h-px bg-gray-50 w-full mb-5" />
+
+                {/* Score bar */}
+                <div className="mb-5 bg-gradient-to-r from-orange-50/30 to-amber-50/30 border border-orange-100/50 p-4 rounded-2xl">
+                  <div className="flex items-center justify-between text-xs font-bold mb-1.5">
+                    <span className="text-gray-600">Fiyat Avantaj Skoru</span>
+                    <span className="text-orange-600 font-black">{aiReport.bargainScore}/100</span>
+                  </div>
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-full transition-all duration-1000"
+                      style={{ width: `${aiReport.bargainScore}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Verdict text */}
+                <p className="text-sm font-medium text-gray-700 leading-relaxed bg-gray-50 border border-gray-100 p-4 rounded-2xl mb-5 italic">
+                  "{aiReport.verdict}"
+                </p>
+
+                {/* Pros and Cons */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-2.5">
+                    <h5 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">👍 Artıları</h5>
+                    {aiReport.pros?.map((pro: string, i: number) => (
+                      <div key={i} className="flex items-start gap-2 text-xs font-bold text-gray-600">
+                        <span className="text-emerald-500 flex-shrink-0 text-sm leading-none">✓</span>
+                        <span>{pro}</span>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="space-y-2.5 border-t border-gray-50 pt-4 sm:border-t-0 sm:pt-0 sm:border-l sm:border-gray-100 sm:pl-4">
+                    <h5 className="text-[10px] font-black text-rose-500 uppercase tracking-widest">👎 Eksileri</h5>
+                    {aiReport.cons?.map((con: string, i: number) => (
+                      <div key={i} className="flex items-start gap-2 text-xs font-bold text-gray-600">
+                        <span className="text-rose-400 flex-shrink-0 text-sm leading-none">✕</span>
+                        <span>{con}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           {/* RIGHT */}
@@ -869,6 +999,50 @@ export default function ProductPage() {
                   >
                     ⚖️ Ürünü Karşılaştır
                   </Link>
+
+                  {/* QUICK COMPARE SUGGESTIONS */}
+                  {similarProducts.length > 0 && (
+                    <div className="mt-4 bg-gray-50 border border-gray-100 p-5 rounded-[28px] space-y-3">
+                      <div className="flex flex-col">
+                        <h4 className="text-xs font-black text-gray-800 uppercase tracking-widest">Hızlı Karşılaştır</h4>
+                        <span className="text-[10px] text-gray-400 font-semibold">Benzer ürünlerle hemen kıyaslayın</span>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2">
+                        {similarProducts.map((similar) => (
+                          <Link 
+                            key={similar.id}
+                            href={`/compare?p1=${product.id}&p2=${similar.id}`}
+                            className="flex items-center gap-3 bg-white hover:bg-orange-50/50 hover:border-orange-200 p-2.5 rounded-2xl border border-gray-100 transition-all group"
+                          >
+                            <div className="w-9 h-9 relative flex-shrink-0 rounded-lg overflow-hidden border border-gray-100 bg-white flex items-center justify-center p-1">
+                              <img 
+                                src={getProductImage(similar)} 
+                                alt={similar.title} 
+                                className="object-contain w-full h-full"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h5 className="text-[11px] font-black text-gray-800 line-clamp-1 group-hover:text-orange-600 transition-colors">
+                                {similar.title}
+                              </h5>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-xs font-black text-[#00B500]">
+                                  {formatPrice(similar.current_price, similar.currency)}
+                                </span>
+                                <span className="text-[9px] text-gray-400 font-bold">
+                                  ⭐ {similar.rating.toFixed(1)}
+                                </span>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-black bg-orange-50 text-orange-600 px-2.5 py-1.5 rounded-xl border border-orange-100/50 group-hover:bg-orange-500 group-hover:text-white group-hover:border-orange-500 transition-all whitespace-nowrap">
+                              Kıyasla ⚖️
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="space-y-2 text-center">
                     <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-gray-400">
