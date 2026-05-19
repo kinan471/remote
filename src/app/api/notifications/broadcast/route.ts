@@ -24,13 +24,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 403 });
     }
 
-    // 2. Get all users who have a role (basically all registered users)
-    const { data: users, error: userError } = await supabaseAdmin
-      .from("user_roles")
-      .select("user_id");
+    // 2. Get all users from auth.users
+    const { data: { users }, error: userError } = await supabaseAdmin.auth.admin.listUsers();
 
     if (userError || !users) {
-      throw new Error("Kullanıcılar alınamadı");
+      throw new Error("Kullanıcılar alınamadı: " + (userError?.message || "Bilinmeyen hata"));
     }
 
     if (users.length === 0) {
@@ -39,7 +37,7 @@ export async function POST(req: NextRequest) {
 
     // 3. Prepare notifications array
     const notifications = users.map((u) => ({
-      user_id: u.user_id,
+      user_id: u.id,
       title,
       message,
       type: type || "new_offer",
