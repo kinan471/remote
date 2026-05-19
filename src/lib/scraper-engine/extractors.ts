@@ -8,6 +8,9 @@ import { ScrapedProduct, ExtractionResult, PlatformType } from '@/types/scraper-
 import { getActiveSelectors, logSelectorSuccess, logSelectorFailure } from './selectors';
 import { normalizePrice, optimizeImages } from './validation';
 import { ENGINE_CONFIG } from './config';
+import { extractEmbeddedState } from './embeddedState';
+
+export { extractEmbeddedState };
 
 /**
  * 1. JSON-LD Parser Module

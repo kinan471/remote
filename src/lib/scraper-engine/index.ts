@@ -6,7 +6,7 @@
 import { ScrapedProduct, ExtractionResult } from '@/types/scraper-engine';
 import { routeRequest, applyAffiliateTag } from './router';
 import { fetchWithStealth } from './browser';
-import { extractHepsiburadaNative, extractAi, extractVision } from './extractors';
+import { extractHepsiburadaNative, extractAi, extractVision, extractEmbeddedState } from './extractors';
 import { validatePriceIntegrity, normalizePrice } from './validation';
 import { generateContentHash, isPageUnchanged, updatePageHash, logScrapingExecution, persistScrapedProduct } from './db';
 import { getPlatformFromUrl } from './config';
@@ -26,8 +26,18 @@ export interface CrawlEngineResult {
 export async function runScraperEngine(url: string, bypassCache = false): Promise<CrawlEngineResult> {
   const startTime = Date.now();
   const platform = getPlatformFromUrl(url);
-  const routerConfig = routeRequest(url);
   
+  if (platform !== 'hepsiburada') {
+    console.warn(`[CrawlerBrain] Scrape aborted. Unsupported platform for: ${url}`);
+    return {
+      success: false,
+      confidenceScore: 0,
+      pipelinePath: 'SmartRouter',
+      error: 'Only Hepsiburada URLs are supported by the Yakala Scraper V2.'
+    };
+  }
+
+  const routerConfig = routeRequest(url);
   let pipelinePath = 'SmartRouter';
   let success = false;
   let errorMsg = '';
@@ -77,21 +87,37 @@ export async function runScraperEngine(url: string, bypassCache = false): Promis
     // 3. Multi-Layered Parallel/Sequential Extraction Pipeline
     const extractionCandidates: ExtractionResult[] = [];
 
-    // 3.1 Try Hyper-Optimized Hepsiburada Native Extractor First
-    const hbRes = await extractHepsiburadaNative(fetchResult.html);
-    if (hbRes.confidence > 0.3) extractionCandidates.push(hbRes);
+    // 3.0 Try Embedded State Extractor First (Highly reliable and cost-effective)
+    const embedRes = await extractEmbeddedState(fetchResult.html);
+    if (embedRes.confidence > 0.3) {
+      extractionCandidates.push(embedRes);
+    }
 
-    // 3.2 AI Fallback if Native parsing fails or has low confidence
-    if (hbRes.confidence < 0.80) {
+    // 3.1 Try Hyper-Optimized Hepsiburada Native Extractor Next
+    if (embedRes.confidence < 0.85) {
+      const hbRes = await extractHepsiburadaNative(fetchResult.html);
+      if (hbRes.confidence > 0.3) {
+        extractionCandidates.push(hbRes);
+      }
+    }
+
+    // 3.2 AI Fallback if parsing fails or has low confidence
+    const maxConfidence = extractionCandidates.length > 0 ? Math.max(...extractionCandidates.map(c => c.confidence)) : 0;
+    if (maxConfidence < 0.80) {
       const aiRes = await extractAi(url);
-      if (aiRes.confidence > 0.3) extractionCandidates.push(aiRes);
+      if (aiRes.confidence > 0.3) {
+        extractionCandidates.push(aiRes);
+      }
     }
 
     // 3.3 Vision OCR Fallback if still low confidence
-    if (extractionCandidates.length === 0 || Math.max(...extractionCandidates.map(c => c.confidence)) < 0.50) {
+    const postAiConfidence = extractionCandidates.length > 0 ? Math.max(...extractionCandidates.map(c => c.confidence)) : 0;
+    if (postAiConfidence < 0.50) {
       if (fetchResult.screenshotBase64) {
         const visRes = await extractVision(fetchResult.screenshotBase64);
-        if (visRes.confidence > 0.3) extractionCandidates.push(visRes);
+        if (visRes.confidence > 0.3) {
+          extractionCandidates.push(visRes);
+        }
       }
     }
 
@@ -157,10 +183,10 @@ export async function runScraperEngine(url: string, bypassCache = false): Promis
       
       // Auto-save learned selectors
       for (const sel of learned.title) {
-        await logSelectorSuccess(platform, 'title', sel);
+        await logSelectorSuccess(platform, 'title', sel, url);
       }
       for (const sel of learned.price) {
-        await logSelectorSuccess(platform, 'price', sel);
+        await logSelectorSuccess(platform, 'price', sel, url);
       }
     }
 

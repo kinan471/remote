@@ -70,10 +70,6 @@ export const ENGINE_CONFIG = {
  */
 export function getPlatformFromUrl(url: string): PlatformType {
   const lowercaseUrl = url.toLowerCase();
-  if (lowercaseUrl.includes('trendyol.com')) return 'trendyol';
   if (lowercaseUrl.includes('hepsiburada.com')) return 'hepsiburada';
-  if (lowercaseUrl.includes('amazon.com') || lowercaseUrl.includes('amazon.com.tr')) return 'amazon';
-  if (lowercaseUrl.includes('n11.com')) return 'n11';
-  if (lowercaseUrl.includes('aliexpress.com')) return 'aliexpress';
   return 'other';
 }

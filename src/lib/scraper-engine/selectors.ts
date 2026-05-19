@@ -5,7 +5,7 @@
 
 import * as cheerio from 'cheerio';
 import { supabase } from '@/lib/supabase';
-import { PlatformType, SelectorType, SelectorRecord } from '@/types/scraper-engine';
+import { PlatformType, SelectorType } from '@/types/scraper-engine';
 import { ENGINE_CONFIG } from './config';
 import { normalizePrice } from './validation';
 
@@ -25,13 +25,10 @@ export async function getActiveSelectors(platform: PlatformType, type: SelectorT
   try {
     const { data, error } = await supabase
       .from('scraping_selectors')
-      .select('selector')
+      .select('selector, success_count, failure_count, unique_page_count, last_verified_at, last_used, is_active')
       .eq('platform', platform)
-      .eq('selector_type', type)
-      .eq('is_active', true)
-      .order('success_count', { ascending: false });
+      .eq('selector_type', type);
 
-    // Graceful degradation if database table v2 does not exist yet (Supabase missing tables)
     if (error || !data || data.length === 0) {
       const configVal = (ENGINE_CONFIG.selectors as any)[platform]?.[type];
       const defaults = configVal ? [configVal] : [];
@@ -39,16 +36,38 @@ export async function getActiveSelectors(platform: PlatformType, type: SelectorT
       return defaults;
     }
 
-    const selectors = data.map((row: any) => row.selector);
-    
+    const filteredSelectors = data
+      .filter((row: any) => {
+        // Predefined or explicitly active selectors
+        if (!row.is_active) return false;
+
+        const successCount = row.success_count || 0;
+        const failureCount = row.failure_count || 0;
+        const successRate = successCount / (successCount + failureCount || 1);
+        
+        // Decay calculation: check if not verified in 30 days
+        const lastActivity = row.last_verified_at || row.last_used;
+        const daysSinceActivity = (Date.now() - new Date(lastActivity || new Date()).getTime()) / (1000 * 60 * 60 * 24);
+        
+        let decayedSuccessRate = successRate;
+        if (daysSinceActivity > 30) {
+          const decayFactor = Math.max(0.2, 1 - (daysSinceActivity - 30) * 0.02);
+          decayedSuccessRate *= decayFactor;
+        }
+
+        // Trust criteria: success rate >= 80%
+        return decayedSuccessRate >= 0.8;
+      })
+      .map((row: any) => row.selector);
+
     // Add default config selector at the end as ultimate fallback
     const defaultConfigVal = (ENGINE_CONFIG.selectors as any)[platform]?.[type];
-    if (defaultConfigVal && !selectors.includes(defaultConfigVal)) {
-      selectors.push(defaultConfigVal);
+    if (defaultConfigVal && !filteredSelectors.includes(defaultConfigVal)) {
+      filteredSelectors.push(defaultConfigVal);
     }
 
-    SELECTOR_CACHE[cacheKey] = selectors;
-    return selectors;
+    SELECTOR_CACHE[cacheKey] = filteredSelectors;
+    return filteredSelectors;
   } catch {
     // Ultimate fallback if Supabase is down or schema is missing
     const configVal = (ENGINE_CONFIG.selectors as any)[platform]?.[type];
@@ -60,27 +79,42 @@ export async function getActiveSelectors(platform: PlatformType, type: SelectorT
 /**
  * Logs the success of a selector, reinforcing its rank in the database
  */
-export async function logSelectorSuccess(platform: PlatformType, type: SelectorType, selector: string) {
+export async function logSelectorSuccess(platform: PlatformType, type: SelectorType, selector: string, url: string) {
   try {
     const { data: existing } = await supabase
       .from('scraping_selectors')
-      .select('id, success_count')
+      .select('id, success_count, unique_page_count, last_used_url, failure_count')
       .eq('platform', platform)
       .eq('selector_type', type)
       .eq('selector', selector)
       .single();
 
+    const cleanUrl = url.split('?')[0];
+
     if (existing) {
+      const isNewPage = existing.last_used_url !== cleanUrl;
+      const newPageCount = isNewPage ? (existing.unique_page_count || 1) + 1 : (existing.unique_page_count || 1);
+      
+      const successCount = (existing.success_count || 0) + 1;
+      const failureCount = existing.failure_count || 0;
+      const successRate = successCount / (successCount + failureCount || 1);
+      
+      // Auto promote to active if verified across 3+ unique pages and success rate > 80%
+      const shouldBeActive = newPageCount >= 3 && successRate >= 0.8;
+
       await supabase
         .from('scraping_selectors')
         .update({
-          success_count: (existing.success_count || 0) + 1,
+          success_count: successCount,
+          unique_page_count: newPageCount,
+          last_used_url: cleanUrl,
           last_used: new Date().toISOString(),
-          is_active: true
+          last_verified_at: new Date().toISOString(),
+          is_active: shouldBeActive
         })
         .eq('id', existing.id);
     } else {
-      // Register new working selector discovered by our self-learning engine
+      // Register new self-learned selector in DRAFT mode (is_active = false) until verified across pages
       await supabase
         .from('scraping_selectors')
         .insert([{
@@ -89,23 +123,28 @@ export async function logSelectorSuccess(platform: PlatformType, type: SelectorT
           selector,
           success_count: 1,
           failure_count: 0,
-          is_active: true,
-          last_used: new Date().toISOString()
+          unique_page_count: 1,
+          last_used_url: cleanUrl,
+          is_active: false, // starts false, requires verification
+          last_used: new Date().toISOString(),
+          last_verified_at: new Date().toISOString()
         }]);
     }
+    // Clear local cache for this key so it fetches fresh working candidates next time
+    delete SELECTOR_CACHE[`${platform}:${type}`];
   } catch {
     // Fail silently to keep crawling robust
   }
 }
 
 /**
- * Logs a selector failure. If consecutive failures exceed threshold, deactivates selector.
+ * Logs a selector failure. If consecutive failures exceed threshold or rate drops, deactivates selector.
  */
 export async function logSelectorFailure(platform: PlatformType, type: SelectorType, selector: string) {
   try {
     const { data: existing } = await supabase
       .from('scraping_selectors')
-      .select('id, failure_count')
+      .select('id, failure_count, success_count')
       .eq('platform', platform)
       .eq('selector_type', type)
       .eq('selector', selector)
@@ -113,7 +152,11 @@ export async function logSelectorFailure(platform: PlatformType, type: SelectorT
 
     if (existing) {
       const failures = (existing.failure_count || 0) + 1;
-      const isStillActive = failures < 5; // Deactivate if it fails 5 times in a row (stale selector due to DOM updates)
+      const success = existing.success_count || 0;
+      const successRate = success / (success + failures || 1);
+      
+      // Deactivate if consecutive failures exceed threshold or success rate falls below 80%
+      const isStillActive = failures < 5 && successRate >= 0.8;
       
       await supabase
         .from('scraping_selectors')
@@ -199,6 +242,7 @@ export function learnNewSelectors(
 
   return candidates;
 }
+
 export function invalidateCache() {
   Object.keys(SELECTOR_CACHE).forEach(key => delete SELECTOR_CACHE[key]);
 }

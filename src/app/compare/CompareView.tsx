@@ -150,7 +150,7 @@ export default function CompareView({ allProducts, p1, p2, p2Name }: CompareView
               onChange={e => setCustomP2Name(e.target.value)}
               className="w-full bg-orange-50/50 border border-orange-200 rounded-xl px-3 py-2 text-xs outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all font-medium text-orange-900 placeholder:text-orange-300 sm:pr-24"
             />
-            <button type="submit" className="w-full sm:w-auto sm:absolute sm:right-1.5 sm:top-1.5 bg-orange-500 hover:bg-orange-600 text-white px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold transition-colors">Yapay Zeka Sor</button>
+            <button type="submit" className="w-full sm:w-auto sm:absolute sm:right-1.5 sm:top-1.5 bg-orange-500 hover:bg-orange-600 text-white px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-bold transition-colors">Sorgula</button>
           </form>
 
           <div className="flex items-center gap-2 mb-3">
@@ -206,14 +206,14 @@ export default function CompareView({ allProducts, p1, p2, p2Name }: CompareView
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
           </button>
-          <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-            <div className="text-4xl sm:text-6xl opacity-20">🤖</div>
+          <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-orange-50 to-orange-100/50 flex items-center justify-center">
+            <div className="text-4xl sm:text-6xl opacity-20">⚖️</div>
           </div>
           <div className="p-3 sm:p-5 flex-1 flex flex-col justify-between">
             <div>
-              <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-purple-500 mb-1">YAPAY ZEKA VERİSİ</div>
+              <div className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-orange-500 mb-1">EDİTÖR DEĞERLENDİRME RAPORU</div>
               <h2 className="font-bold text-gray-900 text-xs sm:text-sm leading-snug mb-2">{p2Name}</h2>
-              <div className="text-[10px] sm:text-xs text-gray-500 italic">Bu ürünün detayları Gemini AI tarafından web verilerinden çekilerek analiz edilmektedir.</div>
+              <div className="text-[10px] sm:text-xs text-gray-500 italic">Bu ürünün detayları, web verileri ve piyasa teknik analizleri derlenerek sunulmaktadır.</div>
             </div>
           </div>
         </div>
@@ -294,8 +294,8 @@ export default function CompareView({ allProducts, p1, p2, p2Name }: CompareView
         <div className="mt-8 rounded-3xl overflow-hidden shadow-xl shadow-orange-500/15">
           <div className="bg-gradient-to-br from-orange-500 via-orange-600 to-amber-500 p-12 text-white relative flex flex-col items-center justify-center text-center">
             <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4"></div>
-            <h4 className="text-xl font-black mb-2">Yakala Yapay Zeka Düşünüyor...</h4>
-            <p className="text-orange-100 text-sm">Ürünler analiz ediliyor, en iyi fırsat belirleniyor.</p>
+            <h4 className="text-xl font-black mb-2">Yakala Editör Analizi Hazırlanıyor...</h4>
+            <p className="text-orange-100 text-sm">Ürün özellikleri ve piyasa fiyat dengesi analiz ediliyor.</p>
           </div>
         </div>
       );
@@ -335,13 +335,13 @@ export default function CompareView({ allProducts, p1, p2, p2Name }: CompareView
               <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-300 rounded-full blur-3xl -ml-10 -mb-10"/>
             </div>
             <div className="relative flex flex-col md:flex-row items-start md:items-center gap-6">
-              <div className="text-7xl drop-shadow-lg">🤖</div>
+              <div className="text-7xl drop-shadow-lg">🏆</div>
               <div className="flex-1">
                 <div className="text-[11px] font-black uppercase tracking-[0.2em] text-orange-200 mb-2">
-                  YAPAY ZEKA SONUÇ DEĞERLENDİRMESİ {isClose && "(BAŞA BAŞ MÜCADELE)"}
+                  EDİTÖR DEĞERLENDİRMESİ VE FIRSAT ANALİZİ {isClose && "(BAŞA BAŞ MÜCADELE)"}
                 </div>
                 <h4 className="text-xl md:text-2xl font-black mb-3 leading-tight flex items-center gap-2">
-                  🏆 Kesin Kazanan: <span className="underline decoration-orange-300 decoration-4 underline-offset-4">{winner.title}</span>
+                  Kesin Kazanan: <span className="underline decoration-orange-300 decoration-4 underline-offset-4">{winner.title}</span>
                 </h4>
                 <p className="text-orange-50 text-sm leading-relaxed font-medium max-w-2xl bg-black/10 p-4 rounded-xl border border-white/10">
                   {reasoning}
@@ -470,21 +470,21 @@ export default function CompareView({ allProducts, p1, p2, p2Name }: CompareView
               {/* Sticky header */}
               <div className="grid grid-cols-[30%_35%_35%] bg-white border-b-2 border-gray-100 sticky top-0 z-10 shadow-sm">
                 <div className="py-4 px-6 text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                  <span className="text-purple-500">✨</span> AI Analizi
+                  <span className="text-orange-500">📊</span> Teknik Analiz
                 </div>
                 <div className="py-4 px-6 border-l border-gray-100">
                   <div className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-0.5">{p1.source_platform}</div>
                   <div className="text-xs font-bold text-gray-800 line-clamp-2">{p1.title}</div>
                 </div>
                 <div className="py-4 px-6 border-l border-gray-100">
-                  <div className="text-[10px] font-black uppercase tracking-widest text-purple-400 mb-0.5">{p2 ? p2.source_platform : "Dış Ürün"}</div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-0.5">{p2 ? p2.source_platform : "Piyasa Alternatifi"}</div>
                   <div className="text-xs font-bold text-gray-800 line-clamp-2">{p2?.title || p2Name}</div>
                 </div>
               </div>
-
+ 
               <table className="w-full text-sm table-fixed">
                 <tbody>
-                  <CompareRow label="🧠 YAPAY ZEKA DONANIM TABLOSU" v1="" v2="" isHeader />
+                  <CompareRow label="📋 ÖZELLİK VE DONANIM KARŞILAŞTIRMASI" v1="" v2="" isHeader />
                   {aiResult.comparisonTable.map((row: any, i: number) => (
                     <CompareRow
                       key={i}

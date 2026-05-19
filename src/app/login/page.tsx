@@ -1,8 +1,19 @@
 "use client";
-
+import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 
 export default function LoginPage() {
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("error") === "unauthorized_email") {
+        setError("yetkisiz_eposta");
+      }
+    }
+  }, []);
+
   const handleLogin = async () => {
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
@@ -25,6 +36,17 @@ export default function LoginPage() {
         <h1 className="text-2xl font-black text-gray-900 mb-2">YAKALA Yönetici</h1>
         <p className="text-gray-500 text-sm font-medium mb-8">Devam etmek için giriş yapın</p>
         
+        {error === "yetkisiz_eposta" && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl text-left animate-slide-down">
+            <div className="flex gap-2 text-red-600 font-bold text-sm mb-1">
+              ⚠️ Giriş Yetkisi Reddedildi!
+            </div>
+            <p className="text-xs text-red-500 font-medium leading-relaxed">
+              Bu panele sadece yönetici e-posta adresi ile giriş yapılabilir. Giriş yapmaya çalıştığınız hesap sistemden güvenli bir şekilde çıkarıldı.
+            </p>
+          </div>
+        )}
+
         <button 
           onClick={handleLogin}
           className="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-100 hover:border-gray-200 text-gray-700 rounded-xl px-4 py-3 text-lg font-bold transition-all shadow-sm"

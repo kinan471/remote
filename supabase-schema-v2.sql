@@ -12,8 +12,10 @@ CREATE TABLE IF NOT EXISTS scraping_selectors (
   selector TEXT NOT NULL,
   success_count INT DEFAULT 0,
   failure_count INT DEFAULT 0,
+  unique_page_count INT DEFAULT 1,
   is_active BOOLEAN DEFAULT TRUE,
   last_used TIMESTAMPTZ DEFAULT NOW(),
+  last_verified_at TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   CONSTRAINT unique_platform_selector UNIQUE (platform, selector_type, selector)
 );
@@ -97,6 +99,11 @@ CREATE INDEX IF NOT EXISTS idx_selectors_platform ON scraping_selectors(platform
 CREATE INDEX IF NOT EXISTS idx_price_history_product ON product_prices(product_id, scraped_at DESC);
 CREATE INDEX IF NOT EXISTS idx_logs_platform ON scraping_logs(platform, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_page_hashes_url ON page_hashes(url);
+
+-- 6. Dynamic schema updates for V2.1
+ALTER TABLE scraping_selectors ADD COLUMN IF NOT EXISTS unique_page_count INT DEFAULT 1;
+ALTER TABLE scraping_selectors ADD COLUMN IF NOT EXISTS last_verified_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE scraping_selectors ADD COLUMN IF NOT EXISTS last_used_url TEXT;
 
 -- ===================================================
 -- END OF V2 SCHEMA MIGRATION

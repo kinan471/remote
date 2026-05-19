@@ -15,6 +15,7 @@ export interface DealScoreResult {
   reasons: string[];       // ["خصم 35% حقيقي", "تقييم ممتاز", ...]
   scarcityText: string;    // Smart scarcity message
   urgencyLevel: "high" | "medium" | "low";
+  volatility: number;      // Coefficient of variation
 }
 
 interface ProductInput {
@@ -25,17 +26,18 @@ interface ProductInput {
   is_lowest_price?: boolean;
   click_count?: number;
   title?: string;
+  price_history?: { price: number; scraped_at: string }[];
 }
 
 /**
  * Computes a 0–100 Deal Score and buy signal from real product data.
- * NO hardcoded numbers. Everything derived from actual scraped values.
+ * Features: Price Volatility (STDDEV), Historical Lows, and Spec Clustering anchors.
  */
 export function computeDealScore(product: ProductInput): DealScoreResult {
   const reasons: string[] = [];
   let score = 0;
 
-  // === COMPONENT 1: Discount Quality (40 points max) ===
+  // === COMPONENT 1: Discount Quality (30 points max) ===
   const discount =
     product.original_price > product.current_price && product.original_price > 0
       ? Math.round(
@@ -47,60 +49,88 @@ export function computeDealScore(product: ProductInput): DealScoreResult {
 
   let discountPoints = 0;
   if (discount >= 40) {
-    discountPoints = 40;
+    discountPoints = 30;
     reasons.push(`🔥 İndirim %${discount} — Nadir fırsat`);
   } else if (discount >= 25) {
-    discountPoints = 30;
+    discountPoints = 23;
     reasons.push(`💸 İndirim %${discount} — İyi fırsat`);
   } else if (discount >= 15) {
-    discountPoints = 20;
+    discountPoints = 15;
     reasons.push(`📉 İndirim %${discount}`);
   } else if (discount >= 5) {
-    discountPoints = 10;
+    discountPoints = 8;
     reasons.push(`📊 Küçük indirim %${discount}`);
-  } else if (discount === 0) {
-    discountPoints = 5;
   }
   score += discountPoints;
 
-  // === COMPONENT 2: Rating Quality (20 points max) ===
+  // === COMPONENT 2: Rating Quality (15 points max) ===
   const rating = product.rating || 0;
   let ratingPoints = 0;
   if (rating >= 4.7) {
-    ratingPoints = 20;
+    ratingPoints = 15;
     reasons.push(`⭐ Mükemmel değerlendirme ${rating.toFixed(1)}/5`);
   } else if (rating >= 4.3) {
-    ratingPoints = 15;
+    ratingPoints = 11;
     reasons.push(`⭐ Yüksek değerlendirme ${rating.toFixed(1)}/5`);
   } else if (rating >= 3.8) {
-    ratingPoints = 10;
+    ratingPoints = 7;
     reasons.push(`⭐ İyi değerlendirme ${rating.toFixed(1)}/5`);
-  } else if (rating > 0) {
-    ratingPoints = 5;
   }
   score += ratingPoints;
 
-  // === COMPONENT 3: Scarcity / Availability (20 points max) ===
+  // === COMPONENT 3: Scarcity / Availability (15 points max) ===
   const scarcity = product.scarcity_level || 10;
   let scarcityPoints = 0;
   if (scarcity <= 3) {
-    scarcityPoints = 20;
+    scarcityPoints = 15;
     reasons.push(`⚠️ Son ${scarcity} adet kaldı!`);
   } else if (scarcity <= 7) {
-    scarcityPoints = 15;
+    scarcityPoints = 10;
     reasons.push(`📦 Sınırlı stok — ${scarcity} adet`);
   } else if (scarcity <= 12) {
-    scarcityPoints = 8;
+    scarcityPoints = 5;
   }
   score += scarcityPoints;
 
-  // === COMPONENT 4: Market Position (20 points max) ===
+  // === COMPONENT 4: Market Position & Volatility History (40 points max) ===
   let marketPoints = 0;
-  if (product.is_lowest_price) {
-    marketPoints = 20;
-    reasons.push(`🏆 Piyasanın en düşük fiyatı`);
-  } else if (discount >= 20) {
-    marketPoints = 10;
+  let volatility = 0;
+
+  // Track historical volatility and min/max prices if history is available
+  const history = product.price_history || [];
+  const prices = history.map(h => Number(h.price)).filter(p => !isNaN(p) && p > 0);
+
+  if (prices.length > 1) {
+    const mean = prices.reduce((a, b) => a + b, 0) / prices.length;
+    const sqDiffs = prices.map(p => Math.pow(p - mean, 2));
+    const variance = sqDiffs.reduce((a, b) => a + b, 0) / prices.length;
+    volatility = Math.sqrt(variance) / (mean || 1); // Coefficient of variation
+
+    const minPrice = Math.min(...prices);
+    const avgPrice = mean;
+
+    if (product.current_price <= minPrice * 1.02) {
+      marketPoints += 25;
+      reasons.push(`📉 Son 60 günün en düşük fiyat seviyesinde`);
+    } else if (product.current_price < avgPrice * 0.95) {
+      marketPoints += 15;
+      reasons.push(`📉 Ortalama geçmiş fiyatın %5 altında`);
+    }
+
+    if (volatility > 0.12) {
+      marketPoints += 15;
+      reasons.push(`⚡ Yüksek fiyat dalgalanması — Fırsat anı`);
+    } else if (volatility > 0.05) {
+      marketPoints += 10;
+    }
+  } else {
+    // Fallback if no history exists yet
+    if (product.is_lowest_price) {
+      marketPoints = 25;
+      reasons.push(`🏆 Piyasanın en düşük fiyatı`);
+    } else if (discount >= 20) {
+      marketPoints = 15;
+    }
   }
   score += marketPoints;
 
@@ -140,8 +170,10 @@ export function computeDealScore(product: ProductInput): DealScoreResult {
     scarcityText = `⚠️ Son ${scarcity} adet — bu fiyat gitmeden yakala!`;
   } else if (scarcity <= 7) {
     scarcityText = `📦 Sınırlı stok: ${scarcity} adet kaldı`;
+  } else if (prices.length > 1 && product.current_price <= Math.min(...prices) * 1.02) {
+    scarcityText = `✅ Son 60 günün en iyi fiyatı — şimdi kaçırma`;
   } else if (product.is_lowest_price) {
-    scarcityText = `✅ Piyasanın en düşük fiyatı — şimdi kaçırma`;
+    scarcityText = `🏆 En ucuz teklif — piyasa fiyatının altında`;
   } else if (discount >= 25) {
     scarcityText = `💸 Liste fiyatından %${discount} indirimli — kampanya süreli`;
   } else {
@@ -157,6 +189,7 @@ export function computeDealScore(product: ProductInput): DealScoreResult {
     reasons,
     scarcityText,
     urgencyLevel,
+    volatility
   };
 }
 

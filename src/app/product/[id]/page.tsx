@@ -43,14 +43,23 @@ export default function ProductPage() {
     if (!id) return;
 
     async function fetchProduct() {
-      const { data } = await supabase
+      const { data: productData } = await supabase
         .from("products")
         .select("*")
         .eq("id", id)
         .single();
 
-      if (data) {
-        setProduct(data);
+      if (productData) {
+        const { data: priceHistory } = await supabase
+          .from("product_prices")
+          .select("price, scraped_at")
+          .eq("product_id", id)
+          .order("scraped_at", { ascending: true });
+
+        setProduct({
+          ...productData,
+          price_history: priceHistory || []
+        } as any);
       }
 
       setLoading(false);

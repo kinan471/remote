@@ -16,7 +16,7 @@ export function routeRequest(url: string): SmartRouteConfig {
   const route: SmartRouteConfig = {
     platform,
     requiresJS: false,
-    priorityOrder: ['JSON-LD', 'CSS-Selector', 'Regex', 'AI-Fallback'],
+    priorityOrder: ['Embedded-State', 'JSON-LD', 'CSS-Selector', 'Regex', 'AI-Fallback'],
     antiBotRisk: 'LOW'
   };
 
@@ -30,7 +30,7 @@ export function routeRequest(url: string): SmartRouteConfig {
     case 'hepsiburada':
       route.requiresJS = true; // Hepsiburada relies heavily on client-side JS hydrations
       route.antiBotRisk = 'HIGH';
-      route.priorityOrder = ['JSON-LD', 'CSS-Selector', 'Regex', 'AI-Fallback', 'Vision-OCR'];
+      route.priorityOrder = ['Embedded-State', 'JSON-LD', 'CSS-Selector', 'Regex', 'AI-Fallback', 'Vision-OCR'];
       break;
 
     case 'amazon':
@@ -54,7 +54,7 @@ export function routeRequest(url: string): SmartRouteConfig {
     default:
       route.requiresJS = true;
       route.antiBotRisk = 'MEDIUM';
-      route.priorityOrder = ['JSON-LD', 'CSS-Selector', 'Regex', 'AI-Fallback'];
+      route.priorityOrder = ['Embedded-State', 'JSON-LD', 'CSS-Selector', 'Regex', 'AI-Fallback'];
       break;
   }
 

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Product, formatPrice, getDiscountPercent } from "@/lib/supabase";
+import { Product, formatPrice, getDiscountPercent, supabase } from "@/lib/supabase";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -60,8 +60,26 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => { 
-    const saved = localStorage.getItem("admin_auth");
-    if (saved === "true") setIsAuth(true);
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data?.session?.user) {
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('is_admin')
+          .eq('user_id', data.session.user.id)
+          .single();
+        
+        if (roleData?.is_admin) {
+          setIsAuth(true);
+        } else {
+          window.location.href = "/";
+        }
+      } else {
+        const saved = localStorage.getItem("admin_auth");
+        if (saved === "true") setIsAuth(true);
+      }
+    };
+    checkSession();
   }, []);
 
   useEffect(() => { 

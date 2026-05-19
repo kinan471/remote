@@ -1,18 +1,43 @@
-/**
- * YAKALA ULTRA SCRAPER ENGINE V2 - DATABASE INTEGRITY PANEL
- * Handles cryptographic cache hashing, price history tracking, and scraping audit logging
- */
-
+import * as cheerio from 'cheerio';
 import { supabase } from '@/lib/supabase';
 import { PlatformType, ScrapedProduct, ScrapingLogEntry } from '@/types/scraper-engine';
 
 /**
- * Calculates a cryptographic MD5 content hash for cache matching
+ * Calculates a cryptographic SHA-256 content hash for semantic cache matching
  */
 export function generateContentHash(html: string): string {
   if (!html) return '';
-  const cryptoNode = require('crypto');
-  return cryptoNode.createHash('md5').update(html).digest('hex');
+  
+  try {
+    const $ = cheerio.load(html);
+    
+    // Extract semantic title, price, and stock info
+    const titleText = $('h1#product-name, h1.product-name, title').first().text() || '';
+    const priceText = $('span[data-bind*="currentPrice"], #offering-price, span.price').first().text() || '';
+    
+    let stockText = '';
+    const stockMatch = html.match(/(?:son|sadece)\s*(\d+)\s*(?:adet|ürün|tane)/i);
+    if (stockMatch) {
+      stockText = stockMatch[1];
+    }
+
+    // Normalize semantic fields (lowercase, strip whitespace, currency, and timestamps)
+    const cleanString = `${titleText} ${priceText} ${stockText}`
+      .toLowerCase()
+      .replace(/[\s\t\n\r]/g, '')
+      .replace(/[₺tltry$,.]/g, '')
+      .replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, '')
+      .trim();
+
+    // Use semantic string as hash key, or full HTML fallback if extraction fails
+    const hashInput = cleanString.length > 5 ? cleanString : html.trim();
+
+    const cryptoNode = require('crypto');
+    return cryptoNode.createHash('sha256').update(hashInput).digest('hex');
+  } catch (err) {
+    const cryptoNode = require('crypto');
+    return cryptoNode.createHash('sha256').update(html).digest('hex');
+  }
 }
 
 /**
