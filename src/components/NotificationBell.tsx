@@ -42,8 +42,9 @@ export default function NotificationBell() {
     fetchNotifs();
 
     // Subscribe to new notifications
+    const channelName = `notifs-${user.id}-${Math.random().toString(36).slice(2, 9)}`;
     const channel = supabase
-      .channel('schema-db-changes')
+      .channel(channelName)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
