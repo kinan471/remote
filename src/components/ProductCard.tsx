@@ -7,6 +7,7 @@ import {
   Product,
   getDiscountPercent,
   formatPrice,
+  getProductImage,
 } from "@/lib/supabase";
 
 interface ProductCardProps {
@@ -25,14 +26,12 @@ const ProductCard = memo(function ProductCard({
     product.current_price || 0
   );
 
-  const imgSrc =
-    !imgError && product.images?.length > 0
-      ? product.images[0]
-      : `https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800`;
+  const imgSrc = !imgError
+    ? getProductImage(product)
+    : `https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800`;
 
   return (
-    <Link
-      href={`/product/${product.id}`}
+    <div
       className={`
         group
         relative
@@ -49,11 +48,18 @@ const ProductCard = memo(function ProductCard({
         ${variant === "featured" ? "ring-2 ring-orange-500 shadow-md" : "shadow-sm"}
       `}
     >
+      {/* Invisible link overlay covering the card */}
+      <Link
+        href={`/product/${product.id}`}
+        className="absolute inset-0 z-10"
+        aria-label={product.title}
+      />
+
       {/* IMAGE SECTION */}
       <div className="relative aspect-[4/5] w-full bg-white flex items-center justify-center p-4">
         {/* Top Badges */}
         {discount > 0 && (
-          <div className="absolute top-2 left-2 z-10">
+          <div className="absolute top-2 left-2 z-20">
             <div className="bg-[#FF6000] text-white text-[9px] font-black px-2 py-1 rounded-full shadow-sm">
               AVANTAJLI
             </div>
@@ -62,8 +68,11 @@ const ProductCard = memo(function ProductCard({
         
         {/* Heart Icon (Favorite) */}
         <button 
-          className="absolute top-2 right-2 z-10 bg-white p-1.5 rounded-full shadow-sm text-gray-400 hover:text-rose-500 transition-colors"
-          onClick={(e) => e.preventDefault()}
+          className="absolute top-2 right-2 z-20 bg-white p-1.5 rounded-full shadow-sm text-gray-400 hover:text-rose-500 transition-colors"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -123,7 +132,7 @@ const ProductCard = memo(function ProductCard({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="text-gray-600 hover:text-[#FF6000] transition-colors p-1"
+            className="relative z-20 text-gray-600 hover:text-[#FF6000] transition-colors p-1"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -131,7 +140,7 @@ const ProductCard = memo(function ProductCard({
           </a>
         </div>
       </div>
-    </Link>
+    </div>
   );
 });
 

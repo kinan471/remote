@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Product, formatPrice, getDiscountPercent } from "@/lib/supabase";
+import { Product, formatPrice, getDiscountPercent, getProductImage } from "@/lib/supabase";
 import { computeDealScore, getSignalClasses } from "@/lib/deal-score";
 import { useRouter } from "next/navigation";
 
@@ -179,7 +179,7 @@ export default function CompareView({ allProducts, p1, p2, p2Name }: CompareView
                 className="flex items-center gap-2 p-2 rounded-xl hover:bg-orange-50 hover:border-orange-200 border border-transparent transition-all text-left w-full group"
               >
                 <div className="relative w-8 h-8 sm:w-12 sm:h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-100">
-                  {p.images?.[0] && <Image src={p.images[0]} alt={p.title} fill className="object-cover" />}
+                  {(p.images?.[0] || p.image_url) && <Image src={getProductImage(p)} alt={p.title} fill className="object-cover" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] sm:text-xs font-bold text-gray-800 line-clamp-1 group-hover:text-orange-600 transition-colors">{p.title}</div>
@@ -234,8 +234,8 @@ export default function CompareView({ allProducts, p1, p2, p2Name }: CompareView
           </button>
         )}
         <div className="relative w-full aspect-[4/3] bg-gray-50 flex items-center justify-center p-2 sm:p-4">
-          {product.images?.[0] && (
-            <Image src={product.images[0]} alt={product.title} fill className="object-contain p-2" />
+          {(product.images?.[0] || product.image_url) && (
+            <Image src={getProductImage(product)} alt={product.title} fill className="object-contain p-2" />
           )}
           {discount > 0 && (
             <div className="absolute top-2 left-2 bg-orange-500 text-white text-[9px] sm:text-[11px] font-black px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-lg shadow-md">

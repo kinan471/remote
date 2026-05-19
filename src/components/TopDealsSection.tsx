@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Product, formatPrice, getDiscountPercent } from "@/lib/supabase";
+import { Product, formatPrice, getDiscountPercent, getProductImage } from "@/lib/supabase";
 import { computeDealScore, getSignalClasses, sortByDealScore } from "@/lib/deal-score";
 
 interface TopDealsSectionProps {
@@ -82,9 +82,9 @@ export default function TopDealsSection({ products }: TopDealsSectionProps) {
 
               {/* Image */}
               <div className="relative w-20 h-20 flex-shrink-0 rounded-2xl overflow-hidden bg-gray-50">
-                {product.images?.[0] ? (
+                {(product.images?.[0] || product.image_url) ? (
                   <Image
-                    src={product.images[0]}
+                    src={getProductImage(product)}
                     alt={product.title}
                     fill
                     className="object-contain p-1.5"

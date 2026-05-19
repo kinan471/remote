@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Product } from "@/lib/supabase";
+import { Product, getProductImage } from "@/lib/supabase";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -26,7 +26,7 @@ export default function FeaturedSlider({ products }: { products: Product[] }) {
         {products.map((product) => (
           <div key={product.id} className="w-full flex-shrink-0 relative aspect-[16/10] sm:aspect-[21/7] overflow-hidden">
             <Image
-              src={product.images?.[0] || ""}
+              src={getProductImage(product)}
               alt={product.title}
               fill
               className="object-cover"

@@ -25,6 +25,7 @@ export interface ScrapedProduct {
   is_lowest_price: boolean;
   comparison_data: any;
   affiliate_link: string;
+  other_offers?: any[];
 }
 
 export interface ExtractionResult {

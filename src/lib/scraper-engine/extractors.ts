@@ -152,6 +152,42 @@ export async function extractHepsiburadaNative(html: string): Promise<Extraction
       }
     }
 
+    // Extract other merchants
+    const other_offers: Array<{ store: string; price: string; url?: string }> = [];
+    
+    // Attempt to extract from data-test-id="other-merchants"
+    $('div[data-test-id="other-merchants"] div.VwUAvtsSpdiwukfc0VGp, div[data-test-id="other-merchants"] .VwUAvtsSpdiwukfc0VGp').each((_, row) => {
+      const storeName = $(row).find('[data-test-id="merchant-name"]').text().trim();
+      const storeHref = $(row).find('[data-test-id="merchant-name"]').attr('href');
+      const priceText = $(row).find('[data-test-id="price-current-price"]').text().trim();
+      
+      if (storeName && priceText) {
+        let cleanPrice = priceText.replace(/\s+/g, ' ').trim();
+        if (!cleanPrice.includes('TL') && !cleanPrice.includes('₺')) {
+          cleanPrice += ' TL';
+        }
+        other_offers.push({
+          store: storeName,
+          price: cleanPrice,
+          url: storeHref ? (storeHref.startsWith('http') ? storeHref : `https://www.hepsiburada.com${storeHref}`) : undefined
+        });
+      }
+    });
+
+    // Fallback if class names differ
+    if (other_offers.length === 0) {
+      $('.merchant-list-item, .merchant-sort-item').each((_, row) => {
+        const storeName = $(row).find('.merchant-name, .seller-name').text().trim();
+        const priceText = $(row).find('.price, .merchant-price').text().trim();
+        if (storeName && priceText) {
+          other_offers.push({
+            store: storeName,
+            price: priceText
+          });
+        }
+      });
+    }
+
     result.data = {
       title,
       current_price,
@@ -161,7 +197,8 @@ export async function extractHepsiburadaNative(html: string): Promise<Extraction
       review_count: reviewCount,
       category,
       specs,
-      scarcity_level
+      scarcity_level,
+      other_offers
     };
 
     result.confidence = title && current_price ? 0.95 : 0.10;

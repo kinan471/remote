@@ -7,6 +7,7 @@ import {
   formatPrice,
   getDiscountPercent,
   Product,
+  getProductGalleryImages,
 } from "@/lib/supabase";
 
 import { computeDealScore, getSignalClasses } from "@/lib/deal-score";
@@ -15,6 +16,8 @@ import Link from "next/link";
 import CountdownTimer from "@/components/CountdownTimer";
 import ImageGallery from "@/components/ImageGallery";
 import { useParams } from "next/navigation";
+import PriceHistoryChart from "@/components/PriceHistoryChart";
+import PriceAlertModal from "@/components/PriceAlertModal";
 
 const persuasionMessages = [
   "🔥 Bugünün en popüler teknoloji fırsatı",
@@ -38,6 +41,22 @@ export default function ProductPage() {
 
   const [loading, setLoading] =
     useState(true);
+
+  const [isTracking, setIsTracking] = useState(false);
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
+
+  useEffect(() => {
+    if (product && typeof window !== "undefined") {
+      const savedAlerts = localStorage.getItem("yakala_price_alerts");
+      if (savedAlerts) {
+        try {
+          const alerts = JSON.parse(savedAlerts);
+          const exists = alerts.some((a: any) => a.productId === product.id);
+          setIsTracking(exists);
+        } catch (e) {}
+      }
+    }
+  }, [product]);
 
   useEffect(() => {
     if (!id) return;
@@ -262,7 +281,8 @@ export default function ProductPage() {
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,115,0,0.10),transparent_60%)]" />
 
               <ImageGallery
-                images={product.images || []}
+                key={product.id}
+                images={getProductGalleryImages(product)}
                 title={product.title}
               />
             </div>
@@ -595,6 +615,17 @@ export default function ProductPage() {
                         )}
                       </span>
                     </p>
+
+                    <button
+                      onClick={() => setIsAlertOpen(true)}
+                      className={`mt-3 w-full flex items-center justify-center gap-2 px-5 py-3 text-xs font-bold rounded-xl border transition-all active:scale-[0.98] ${
+                        isTracking
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : "bg-indigo-600 text-white border-transparent hover:bg-indigo-700"
+                      }`}
+                    >
+                      {isTracking ? "🔔 Fiyat Alarmı Etkin (Takip Ediliyor)" : "🔔 Fiyatı Düşünce Haber Ver"}
+                    </button>
                   </div>
 
                   {discount > 0 && (
@@ -871,32 +902,61 @@ export default function ProductPage() {
               </div>
             )}
 
+            {/* PRICE HISTORY CHART */}
+            <PriceHistoryChart 
+              priceHistory={product.price_history || []} 
+              currentPrice={product.current_price} 
+            />
+
             {/* COMPARISON DATA */}
-            {product.comparison_data && product.comparison_data.other_offers && product.comparison_data.other_offers.length > 0 && (
-              <div className="rounded-[36px] bg-white p-6 shadow-sm sm:p-8">
-                <h3 className="mb-6 text-xl font-black text-gray-900">
-                  Fiyat Analizi
-                </h3>
+            <div className="rounded-[36px] bg-white p-6 shadow-sm sm:p-8">
+              <h3 className="mb-6 text-xl font-black text-gray-900">
+                Diğer Mağaza Fiyatları
+              </h3>
+              {product.comparison_data && product.comparison_data.other_offers && product.comparison_data.other_offers.length > 0 ? (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between rounded-2xl border-2 border-emerald-500 bg-emerald-50 p-4">
                     <div>
                       <p className="text-xs font-black uppercase text-emerald-700">En İyi Teklif (YAKALA)</p>
                       <p className="text-sm font-bold text-gray-900">{product.source_platform.toUpperCase()}</p>
                     </div>
-                    <p className="text-lg font-black text-emerald-600">{formatPrice(product.current_price, product.currency)}</p>
+                    <div className="text-right">
+                      <p className="text-lg font-black text-emerald-600">{formatPrice(product.current_price, product.currency)}</p>
+                      <p className="text-xs font-semibold text-emerald-700">Kargo Dahil</p>
+                    </div>
                   </div>
                   {product.comparison_data.other_offers.map((offer: any, idx: number) => (
-                    <div key={idx} className="flex items-center justify-between rounded-2xl border border-gray-100 bg-gray-50 p-4 opacity-70">
+                    <div key={idx} className="flex items-center justify-between rounded-2xl border border-gray-100 bg-gray-50 p-4 hover:bg-gray-100/50 transition-colors">
                       <div>
-                        <p className="text-xs font-bold uppercase text-gray-400">Alternatif</p>
-                        <p className="text-sm font-medium text-gray-700">{offer.store}</p>
+                        <p className="text-xs font-bold uppercase text-gray-400">Alternatif Mağaza</p>
+                        <p className="text-sm font-bold text-gray-700">{offer.store}</p>
                       </div>
-                      <p className="text-base font-bold text-gray-500 line-through">{offer.price}</p>
+                      <div className="text-right flex flex-col items-end gap-1.5">
+                        <p className="text-base font-bold text-gray-900">{offer.price}</p>
+                        {offer.url ? (
+                          <Link 
+                            href={offer.url} 
+                            target="_blank" 
+                            className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-600 hover:bg-indigo-100 transition-colors"
+                          >
+                            Mağazaya Git ↗
+                          </Link>
+                        ) : (
+                          <span className="text-[10px] text-gray-400 font-medium">Platform Üzerinden Satış</span>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="text-center py-6 bg-gray-50 rounded-3xl border border-dashed border-gray-200 p-4">
+                  <p className="text-sm font-bold text-gray-700">Karşılaştırılacak Alternatif Mağaza Yok</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Bu ürün şu an sadece <span className="font-semibold text-gray-600">{product.source_platform.toUpperCase()}</span> platformunda satıştadır. Diğer mağaza fiyatları tespit edilirse otomatik olarak burada listelenecektir.
+                  </p>
+                </div>
+              )}
+            </div>
 
             {/* trust */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -1053,6 +1113,15 @@ export default function ProductPage() {
           </Link>
         </div>
       </div>
+
+      <PriceAlertModal
+        isOpen={isAlertOpen}
+        onClose={() => setIsAlertOpen(false)}
+        productId={product.id}
+        productTitle={product.title}
+        currentPrice={product.current_price}
+        onAlertCreated={() => setIsTracking(true)}
+      />
     </main>
   );
 }

@@ -5,8 +5,12 @@
       "schedule": "0 3 * * *"
     },
     {
+      "path": "/api/update-prices?secret=yakala_ultra_secret_2024",
+      "schedule": "0 * * * *"
+    },
+    {
       "path": "/api/sync?secret=yakala_ultra_secret_2024",
-      "schedule": "0 5 * * *"
+      "schedule": "0 * * * *"
     }
   ]
 }

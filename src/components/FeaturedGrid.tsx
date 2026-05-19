@@ -1,5 +1,5 @@
 "use client";
-import { Product, formatPrice } from "@/lib/supabase";
+import { Product, formatPrice, getProductImage } from "@/lib/supabase";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -28,7 +28,7 @@ export default function FeaturedGrid({ products }: { products: Product[] }) {
             >
               <div className="relative aspect-square mb-2.5 overflow-hidden rounded-xl bg-gray-50 flex items-center justify-center">
                 <Image 
-                  src={p.images?.[0] || ""} 
+                  src={getProductImage(p)} 
                   alt={p.title} 
                   fill 
                   className="object-contain p-2.5 group-hover:scale-105 transition-transform duration-500"

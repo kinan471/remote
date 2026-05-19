@@ -151,7 +151,11 @@ export async function runScraperEngine(url: string, bypassCache = false): Promis
       source_platform: platform,
       currency: 'TRY',
       is_lowest_price: true,
-      comparison_data: { lowest_price: "En uygun fiyat garantisi", store: "Yakala" },
+      comparison_data: { 
+        lowest_price: "En uygun fiyat garantisi", 
+        store: "Yakala",
+        other_offers: bestCandidate.data.other_offers || [] 
+      },
       affiliate_link: applyAffiliateTag(url, platform)
     };
 
