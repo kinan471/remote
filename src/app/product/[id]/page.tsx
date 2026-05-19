@@ -363,23 +363,7 @@ export default function ProductPage() {
               </div>
             </div>
 
-            {/* trust logos */}
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-6 opacity-70">
-              <img
-                src="/logos/trendyol.svg"
-                className="h-5"
-              />
 
-              <img
-                src="/logos/hepsiburada.svg"
-                className="h-5"
-              />
-
-              <img
-                src="/logos/amazon.svg"
-                className="h-5"
-              />
-            </div>
 
             {/* YAKALA AI SHOPPING ADVISOR */}
             {aiReportLoading ? (

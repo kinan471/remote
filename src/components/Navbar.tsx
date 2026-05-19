@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { supabase, Product, formatPrice } from "@/lib/supabase";
 import Image from "next/image";
+import { useAuth } from "@/hooks/useAuth";
+import NotificationBell from "@/components/NotificationBell";
 
 const normalizeTurkish = (str: string) =>
   str
@@ -20,6 +22,7 @@ export default function Navbar() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const { user, loading: authLoading, signOut, signInWithGoogle } = useAuth();
 
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [suggestions, setSuggestions] = useState<Product[]>([]);
@@ -27,6 +30,8 @@ export default function Navbar() {
   const [categories, setCategories] = useState<string[]>([]);
   const [hierarchy, setHierarchy] = useState<Record<string, string[]>>({});
   const [selectedParent, setSelectedParent] = useState<string>("Kategoriler");
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [activeSubCategory, setActiveSubCategory] = useState<string | null>(null);
@@ -129,6 +134,10 @@ export default function Navbar() {
 
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
         setSuggestions([]);
+      }
+
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -484,6 +493,65 @@ export default function Navbar() {
                 </svg>
               )}
             </button>
+          </div>
+
+          <NotificationBell />
+
+          {/* AUTH BUTTON */}
+          <div className="relative shrink-0" ref={userMenuRef}>
+            {authLoading ? (
+              <div className="w-8 h-8 rounded-full bg-gray-100 animate-pulse" />
+            ) : user ? (
+              <>
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-2 bg-orange-50 border border-orange-100 hover:border-orange-300 rounded-2xl px-2 py-1.5 sm:px-3 transition-all"
+                >
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-white text-xs font-black overflow-hidden">
+                    {user.user_metadata?.avatar_url ? (
+                      <Image src={user.user_metadata.avatar_url} alt="avatar" width={28} height={28} className="rounded-full" />
+                    ) : (
+                      (user.email || "U")[0].toUpperCase()
+                    )}
+                  </div>
+                  <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" className={`text-orange-400 transition-transform ${userMenuOpen ? "rotate-180" : ""}`}><path d="M2 4l4 4 4-4" /></svg>
+                </button>
+
+                {userMenuOpen && (
+                  <div className="absolute right-0 top-[calc(100%+8px)] z-[300] w-52 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-50">
+                      <p className="text-xs font-black text-gray-900 truncate">{user.user_metadata?.full_name || user.email}</p>
+                      <p className="text-[10px] text-gray-400 truncate">{user.email}</p>
+                    </div>
+                    <div className="py-1">
+                      <Link href="/" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors">
+                        <span>🔔</span> Fiyat Alarmlarım
+                      </Link>
+                      <button
+                        onClick={() => { signOut(); setUserMenuOpen(false); }}
+                        className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-red-500 hover:bg-red-50 transition-colors"
+                      >
+                        <span>🚪</span> Çıkış Yap
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <button
+                onClick={() => signInWithGoogle("/")}
+                className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-2xl px-3 py-2 sm:px-4 text-xs font-black transition-all shadow-sm active:scale-95 whitespace-nowrap"
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#fff" opacity=".9"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#fff" opacity=".9"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#fff" opacity=".8"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#fff" opacity=".8"/>
+                </svg>
+                <span className="hidden sm:inline">Giriş Yap</span>
+                <span className="sm:hidden">Giriş</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

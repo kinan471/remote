@@ -179,15 +179,21 @@ const ProductCard = memo(function ProductCard({
         </h3>
 
         {/* RATING */}
-        <div className="flex items-center gap-1 mt-1 mb-2">
-          <span className="text-[#FF6000] text-[12px]">★</span>
-          <span className="text-[11px] font-bold text-gray-700">
-            {product.rating > 0 ? product.rating.toFixed(1) : "4.5"}
-          </span>
-          <span className="text-[10px] text-gray-400">
-            ({product.review_count > 0 ? product.review_count : "120"})
-          </span>
-        </div>
+        {(product.rating > 0 || product.review_count > 0) && (
+          <div className="flex items-center gap-1 mt-1 mb-2">
+            <span className="text-[#FF6000] text-[12px]">★</span>
+            <span className="text-[11px] font-bold text-gray-700">
+              {product.rating > 0 ? product.rating.toFixed(1) : ""}
+            </span>
+            {product.review_count > 0 && (
+              <span className="text-[10px] text-gray-400">
+                ({product.review_count > 1000
+                  ? (product.review_count / 1000).toFixed(1) + "K"
+                  : product.review_count})
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="flex-1"></div>
 

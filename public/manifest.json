@@ -1,0 +1,35 @@
+{
+  "name": "Yakala — En İyi Fırsatlar",
+  "short_name": "Yakala",
+  "description": "Türkiye'nin en iyi teknoloji fırsatlarını yakala! Gerçek indirimler, fiyat takibi, anında bildirim.",
+  "theme_color": "#FF6000",
+  "background_color": "#F8F9FA",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
+  "start_url": "/",
+  "categories": ["shopping", "lifestyle"],
+  "lang": "tr",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ]
+}

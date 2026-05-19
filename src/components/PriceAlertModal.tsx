@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { formatPrice } from "@/lib/supabase";
+import { useAuth } from "@/hooks/useAuth";
 
 interface PriceAlertModalProps {
   isOpen: boolean;
@@ -20,32 +21,22 @@ export default function PriceAlertModal({
   currentPrice,
   onAlertCreated,
 }: PriceAlertModalProps) {
-  const [email, setEmail] = useState("");
+  const { user, signInWithGoogle } = useAuth();
   const [targetPrice, setTargetPrice] = useState<string>(Math.floor(currentPrice * 0.9).toString());
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-
-  useEffect(() => {
-    // Try to load email from localStorage if they have entered it before
-    if (typeof window !== "undefined") {
-      const savedEmail = localStorage.getItem("yakala_alert_email");
-      if (savedEmail) {
-        setEmail(savedEmail);
-      }
-    }
-  }, [isOpen]);
+  const [submitting, setSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-
-    if (!email || !email.includes("@")) {
-      setError("Lütfen geçerli bir e-posta adresi girin.");
+    if (!user) {
+      signInWithGoogle(location.pathname);
       return;
     }
 
+    setError("");
     const priceNum = parseFloat(targetPrice);
     if (isNaN(priceNum) || priceNum <= 0) {
       setError("Lütfen geçerli bir hedef fiyat girin.");
@@ -57,36 +48,32 @@ export default function PriceAlertModal({
       return;
     }
 
-    // Save alert locally
-    const savedAlerts = localStorage.getItem("yakala_price_alerts");
-    const alerts = savedAlerts ? JSON.parse(savedAlerts) : [];
-    
-    // Add new alert (or update if already exists)
-    const newAlert = {
-      productId,
-      productTitle,
-      email,
-      targetPrice: priceNum,
-      currentPriceAtSubscription: currentPrice,
-      createdAt: new Date().toISOString(),
-    };
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/price-alerts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_id: productId,
+          product_title: productTitle,
+          target_price: priceNum,
+        }),
+      });
 
-    const existingIndex = alerts.findIndex((a: any) => a.productId === productId);
-    if (existingIndex > -1) {
-      alerts[existingIndex] = newAlert;
-    } else {
-      alerts.push(newAlert);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Bir hata oluştu.");
+
+      setSuccess(true);
+      setTimeout(() => {
+        onAlertCreated();
+        setSuccess(false);
+        onClose();
+      }, 1500);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
     }
-
-    localStorage.setItem("yakala_price_alerts", JSON.stringify(alerts));
-    localStorage.setItem("yakala_alert_email", email);
-
-    setSuccess(true);
-    setTimeout(() => {
-      onAlertCreated();
-      setSuccess(false);
-      onClose();
-    }, 1500);
   };
 
   return (
@@ -167,27 +154,14 @@ export default function PriceAlertModal({
                   </span>
                 </div>
               </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  E-Posta Adresiniz
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="isim@örnek.com"
-                  className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all"
-                  required
-                />
-              </div>
             </div>
 
             <button
               type="submit"
-              className="w-full rounded-2xl bg-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 hover:shadow-indigo-600/30 transition-all active:scale-[0.98]"
+              disabled={submitting || !user}
+              className="w-full rounded-2xl bg-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 hover:shadow-indigo-600/30 transition-all active:scale-[0.98] disabled:opacity-50"
             >
-              Takibi Başlat
+              {submitting ? "İşleniyor..." : "Takibi Başlat"}
             </button>
           </form>
         )}

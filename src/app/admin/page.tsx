@@ -6,6 +6,18 @@ import Image from "next/image";
 
 type Stats = { visits: number; products: number; clicks: number };
 
+type AnalyticsData = {
+  todayViews: number;
+  weekViews: number;
+  monthViews: number;
+  topProducts: { product_title: string; product_id: string; count: number }[];
+  topSearches: { query: string; count: number }[];
+  topCategories: { category: string; count: number }[];
+  reviewStats: { count: number; avg: number };
+  usersCount: number;
+  dailyViews: { date: string; count: number }[];
+};
+
 const FEATURED_TYPE_LABELS = {
   cheapest:   { label: "💰 En Uygun",    color: "text-green-600" },
   bestseller: { label: "🏆 Çok Satılan", color: "text-orange-600" },
@@ -17,6 +29,8 @@ export default function AdminDashboard() {
   const [password, setPassword] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [stats, setStats] = useState<Stats>({ visits: 0, products: 0, clicks: 0 });
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [featureLoading, setFeatureLoading] = useState<string | null>(null);
   const [marqueeText, setMarqueeText] = useState("");
@@ -59,6 +73,68 @@ export default function AdminDashboard() {
     }
   };
 
+  const loadAnalytics = async () => {
+    setAnalyticsLoading(true);
+    try {
+      const now = new Date();
+      const today = now.toISOString().split("T")[0];
+      const weekAgo = new Date(now.getTime() - 7 * 86400000).toISOString();
+      const monthAgo = new Date(now.getTime() - 30 * 86400000).toISOString();
+
+      const [todayRes, weekRes, monthRes, topProdsRes, topSearchRes, topCatRes, reviewRes] = await Promise.all([
+        supabase.from("page_views").select("id", { count: "exact", head: true }).gte("created_at", today),
+        supabase.from("page_views").select("id", { count: "exact", head: true }).gte("created_at", weekAgo),
+        supabase.from("page_views").select("id", { count: "exact", head: true }).gte("created_at", monthAgo),
+        supabase.from("product_clicks").select("product_title, product_id").gte("created_at", monthAgo).limit(500),
+        supabase.from("search_queries").select("query").gte("created_at", monthAgo).limit(500),
+        supabase.from("category_interests").select("category").gte("created_at", monthAgo).limit(500),
+        supabase.from("platform_reviews").select("rating").eq("is_approved", true),
+      ]);
+
+      // Aggregate top products
+      const prodCounts: Record<string, { product_title: string; product_id: string; count: number }> = {};
+      (topProdsRes.data || []).forEach((r: any) => {
+        if (!r.product_id) return;
+        if (!prodCounts[r.product_id]) prodCounts[r.product_id] = { product_title: r.product_title || r.product_id, product_id: r.product_id, count: 0 };
+        prodCounts[r.product_id].count++;
+      });
+      const topProducts = Object.values(prodCounts).sort((a, b) => b.count - a.count).slice(0, 8);
+
+      // Aggregate top searches
+      const searchCounts: Record<string, number> = {};
+      (topSearchRes.data || []).forEach((r: any) => { if (r.query) searchCounts[r.query] = (searchCounts[r.query] || 0) + 1; });
+      const topSearches = Object.entries(searchCounts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([query, count]) => ({ query, count }));
+
+      // Aggregate top categories
+      const catCounts: Record<string, number> = {};
+      (topCatRes.data || []).forEach((r: any) => { if (r.category) catCounts[r.category] = (catCounts[r.category] || 0) + 1; });
+      const topCategories = Object.entries(catCounts).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([category, count]) => ({ category, count }));
+
+      // Review stats
+      const reviews = reviewRes.data || [];
+      const reviewStats = {
+        count: reviews.length,
+        avg: reviews.length > 0 ? Math.round((reviews.reduce((s: number, r: any) => s + r.rating, 0) / reviews.length) * 10) / 10 : 0
+      };
+
+      setAnalytics({
+        todayViews: todayRes.count || 0,
+        weekViews: weekRes.count || 0,
+        monthViews: monthRes.count || 0,
+        topProducts,
+        topSearches,
+        topCategories,
+        reviewStats,
+        usersCount: 0,
+        dailyViews: [],
+      });
+    } catch (e) {
+      console.error("Analytics load error:", e);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
   useEffect(() => { 
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
@@ -83,7 +159,10 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => { 
-    if (isAuth) loadData(); 
+    if (isAuth) {
+      loadData();
+      loadAnalytics();
+    }
   }, [isAuth]);
 
   const handleLogin = (e: React.FormEvent) => {
@@ -280,20 +359,131 @@ export default function AdminDashboard() {
           </p>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          {[
-            { label: "Toplam Ziyaret", value: stats.visits.toLocaleString("tr-TR"), icon: "👁", color: "text-blue-600" },
-            { label: "Aktif Ürünler",  value: stats.products.toLocaleString("tr-TR"), icon: "📦", color: "text-green-600" },
-          ].map((s) => (
-            <div key={s.label} className="admin-card flex items-center gap-4">
-              <span className="text-3xl">{s.icon}</span>
-              <div>
-                <div className={`text-2xl font-black ${s.color} font-poppins`}>{s.value}</div>
-                <div className="text-gray-400 text-[10px] font-black uppercase tracking-widest mt-1">{s.label}</div>
-              </div>
+        {/* ── ANALYTICS DASHBOARD ── */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-gray-900 font-black text-xl flex items-center gap-2">📊 Analitik & Platform Raporu</h2>
+            <button onClick={loadAnalytics} disabled={analyticsLoading} className="text-xs px-4 py-2 bg-white border border-gray-200 rounded-xl font-black text-gray-600 hover:bg-gray-50 transition-all disabled:opacity-50">
+              {analyticsLoading ? "Yükleniyor..." : "↻ Yenile"}
+            </button>
+          </div>
+
+          {analyticsLoading && !analytics ? (
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              {[1,2,3].map(i => <div key={i} className="h-24 bg-gray-100 rounded-2xl animate-pulse" />)}
             </div>
-          ))}
+          ) : analytics ? (
+            <>
+              {/* View Counters */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+                {[
+                  { label: "Bugün", value: analytics.todayViews, icon: "📅", color: "text-blue-600", bg: "bg-blue-50" },
+                  { label: "Bu Hafta", value: analytics.weekViews, icon: "📆", color: "text-purple-600", bg: "bg-purple-50" },
+                  { label: "Bu Ay", value: analytics.monthViews, icon: "🗓", color: "text-green-600", bg: "bg-green-50" },
+                  { label: "Platform Puanı", value: analytics.reviewStats.count > 0 ? `${analytics.reviewStats.avg} ⭐` : "—", icon: "💬", color: "text-amber-600", bg: "bg-amber-50", isText: true },
+                ].map((s) => (
+                  <div key={s.label} className="admin-card flex items-center gap-3 !p-4">
+                    <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center text-xl shrink-0`}>{s.icon}</div>
+                    <div>
+                      <div className={`text-xl font-black ${s.color}`}>{(s as any).isText ? s.value : (s.value as number).toLocaleString("tr-TR")}</div>
+                      <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest">{s.label}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                {/* Top Products */}
+                <div className="admin-card">
+                  <h4 className="text-sm font-black text-gray-900 mb-3 flex items-center gap-2">🔥 En Çok Tıklanan Ürünler</h4>
+                  {analytics.topProducts.length === 0 ? (
+                    <p className="text-xs text-gray-400 text-center py-4">Henüz veri yok</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {analytics.topProducts.map((p, i) => (
+                        <div key={p.product_id} className="flex items-center gap-3">
+                          <span className={`text-xs font-black w-5 text-center ${i < 3 ? "text-orange-500" : "text-gray-400"}`}>{i + 1}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-gray-800 truncate">{p.product_title}</p>
+                          </div>
+                          <span className="text-[10px] font-black text-white bg-orange-500 px-2 py-0.5 rounded-full shrink-0">{p.count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Top Searches */}
+                <div className="admin-card">
+                  <h4 className="text-sm font-black text-gray-900 mb-3 flex items-center gap-2">🔍 En Çok Aranan</h4>
+                  {analytics.topSearches.length === 0 ? (
+                    <p className="text-xs text-gray-400 text-center py-4">Henüz veri yok</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {analytics.topSearches.map((s, i) => (
+                        <div key={s.query} className="flex items-center gap-3">
+                          <span className={`text-xs font-black w-5 text-center ${i < 3 ? "text-purple-500" : "text-gray-400"}`}>{i + 1}</span>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <div className="h-1.5 bg-purple-100 rounded-full flex-1">
+                                <div className="h-full bg-purple-500 rounded-full" style={{ width: `${Math.round((s.count / analytics.topSearches[0].count) * 100)}%` }} />
+                              </div>
+                            </div>
+                            <p className="text-xs font-bold text-gray-700 mt-0.5">"{s.query}"</p>
+                          </div>
+                          <span className="text-[10px] font-black text-gray-500">{s.count}x</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Top Categories */}
+                <div className="admin-card">
+                  <h4 className="text-sm font-black text-gray-900 mb-3 flex items-center gap-2">📂 İlgi Çeken Kategoriler</h4>
+                  {analytics.topCategories.length === 0 ? (
+                    <p className="text-xs text-gray-400 text-center py-4">Henüz veri yok</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {analytics.topCategories.map((c, i) => (
+                        <div key={c.category} className="flex items-center gap-2">
+                          <span className={`text-xs font-black w-5 text-center ${i < 3 ? "text-green-500" : "text-gray-400"}`}>{i + 1}</span>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <div className="h-1.5 bg-green-100 rounded-full flex-1">
+                                <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.round((c.count / analytics.topCategories[0].count) * 100)}%` }} />
+                              </div>
+                            </div>
+                            <p className="text-xs font-bold text-gray-700 mt-0.5">{c.category}</p>
+                          </div>
+                          <span className="text-[10px] font-black text-gray-500">{c.count}x</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Platform Reviews Summary */}
+              {analytics.reviewStats.count > 0 && (
+                <div className="admin-card bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-black text-gray-900 mb-1">💬 Platform Değerlendirmeleri</h4>
+                      <p className="text-xs text-gray-500">{analytics.reviewStats.count} kullanıcı değerlendirdi</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-3xl font-black text-amber-500">{analytics.reviewStats.avg}</div>
+                      <div className="text-xs text-amber-600 font-black">/ 5 ★</div>
+                    </div>
+                  </div>
+                  <div className="mt-3 h-2 bg-amber-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full" style={{ width: `${(analytics.reviewStats.avg / 5) * 100}%` }} />
+                  </div>
+                </div>
+              )}
+            </>
+          ) : null}
         </div>
 
         {/* YAKALA Ultra Scraper Kontrol Merkezi */}
