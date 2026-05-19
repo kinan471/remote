@@ -29,8 +29,6 @@ const HOURS_OPTIONS = [
 
 export default function AddProductPage() {
   const router = useRouter();
-  const [isAuth, setIsAuth] = useState(false);
-  const [password, setPassword] = useState("");
   const [url, setUrl] = useState("");
   const [scraping, setScraping] = useState(false);
   const [scrapeError, setScrapeError] = useState("");
@@ -54,57 +52,22 @@ export default function AddProductPage() {
     rating: "4.5",
   });
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("admin_auth");
-      if (saved === "true") setIsAuth(true);
-    }
-  }, []);
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === "yakala2024") {
-      setIsAuth(true);
-      localStorage.setItem("admin_auth", "true");
-    } else {
-      alert("Hatalı şifre!");
-    }
-  };
-
-  if (!isAuth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4 pt-28">
-        <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-8">
-          <div className="text-center mb-8">
-            <div className="inline-flex p-3 rounded-2xl bg-orange-500/10 mb-4 border border-orange-500/20">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#FF6000" strokeWidth="2.5">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-            </div>
-            <h1 className="text-2xl font-black text-gray-900">YAKALA Admin</h1>
-            <p className="text-gray-500 text-sm mt-2 font-medium">Yönetici şifresini girin</p>
-          </div>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <input
-              type="password"
-              placeholder="Şifre"
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-center text-lg tracking-widest outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoFocus
-            />
-            <button type="submit" className="btn-yakala w-full py-4 text-lg">
-              Giriş Yap
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
+  // Auth is handled by middleware
 
   const handleScrape = async () => {
     if (!url.trim()) return;
+    
+    try {
+      const parsedUrl = new URL(url);
+      if (!parsedUrl.hostname.includes('hepsiburada.com')) {
+        setScrapeError("Yakala Scraper is now optimized EXCLUSIVELY for Hepsiburada. Please enter a hepsiburada.com URL.");
+        return;
+      }
+    } catch (e) {
+      setScrapeError("Geçersiz URL formatı.");
+      return;
+    }
+
     setScraping(true);
     setScrapeError("");
     setScraped(null);
@@ -219,7 +182,7 @@ export default function AddProductPage() {
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleScrape()}
-                  placeholder="https://www.trendyol.com/... veya hepsiburada.com/..."
+                  placeholder="https://www.hepsiburada.com/..."
                   className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all"
                 />
                 <button

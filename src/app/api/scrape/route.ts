@@ -29,6 +29,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing target 'url' parameter in request payload." }, { status: 400 });
     }
 
+    try {
+      const parsedUrl = new URL(url);
+      if (!parsedUrl.hostname.includes('hepsiburada.com')) {
+        return NextResponse.json({ error: "Yakala Scraper is now optimized EXCLUSIVELY for Hepsiburada. Other URLs are rejected." }, { status: 400 });
+      }
+    } catch (e) {
+      return NextResponse.json({ error: "Invalid URL format." }, { status: 400 });
+    }
+
     const syncParam = searchParams.get('sync') === 'true' || body.sync === true;
 
     if (syncParam) {

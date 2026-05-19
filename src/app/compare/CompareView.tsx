@@ -391,9 +391,30 @@ export default function CompareView({ allProducts, p1, p2, p2Name }: CompareView
             </div>
           </div>
         </div>
+      </div>
+    );
+  };
 
-        {/* Deep Analysis Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  const renderAnalysisCards = () => {
+    if (!p1 || (!p2 && !p2Name) || !aiResult) return null;
+
+    const winnerId = aiResult.winner;
+    const { 
+      p1Sentiment,
+      p2Sentiment,
+      p1TargetAudience,
+      p2TargetAudience,
+      actualPerformanceComparison
+    } = aiResult;
+    
+    let winner = null;
+    let p2DisplayTitle = p2?.title || p2Name || "Ürün 2";
+    if (winnerId === 1) winner = p1;
+    else if (winnerId === 2) winner = p2 || { title: p2Name, id: 2 } as any;
+    else winner = p1;
+
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Actual Performance */}
           <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col">
             <div className="text-3xl mb-4 bg-orange-50 w-12 h-12 flex items-center justify-center rounded-2xl text-orange-500">⚡</div>
@@ -434,22 +455,19 @@ export default function CompareView({ allProducts, p1, p2, p2Name }: CompareView
             </div>
           </div>
         </div>
-      </div>
     );
   };
 
   return (
     <div>
       {/* Product cards header row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-2 gap-3 md:gap-6 mb-8">
         {renderProductCard(p1, false)}
         {renderProductCard(p2, true)}
       </div>
 
       {p1 && (p2 || p2Name) && (
         <>
-          {renderVerdict()}
-
           {/* AI Generated Dynamic Comparison Table */}
           {aiResult?.comparisonTable && aiResult.comparisonTable.length > 0 && (
             <div className="mt-8 bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
@@ -484,6 +502,9 @@ export default function CompareView({ allProducts, p1, p2, p2Name }: CompareView
               </table>
             </div>
           )}
+
+          {renderAnalysisCards()}
+          {renderVerdict()}
         </>
       )}
     </div>

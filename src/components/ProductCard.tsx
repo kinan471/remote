@@ -166,7 +166,7 @@ const ProductCard = memo(function ProductCard({
       </Link>
 
       {/* CONTENT */}
-      <div className="flex flex-1 flex-col p-4 sm:p-5 gap-4">
+      <div className="flex flex-1 flex-col p-3 sm:p-4 gap-3">
         {/* PLATFORM + RATING */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 max-w-[70%] truncate">
@@ -195,18 +195,17 @@ const ProductCard = memo(function ProductCard({
         </div>
 
         {/* BUY SIGNAL BADGE - The Decision Engine */}
-        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-black ${classes.badge} mb-1`}>
+        <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[9px] font-black ${classes.badge} mb-0.5`}>
           <span className={`w-1.5 h-1.5 rounded-full bg-white/70 ${deal.signal === 'BUY_NOW' ? 'animate-pulse' : ''}`} />
           {deal.signalEmoji} {deal.signalLabel}
-          <span className={`ml-1 px-1.5 py-0.5 rounded-md bg-white/20 text-[9px] font-black`}>{deal.score}/100</span>
         </div>
 
         {/* TITLE */}
         <Link href={`/product/${product.id}`}>
           <h3 className="
-            min-h-[52px]
-            text-[15px]
-            sm:text-base
+            min-h-[40px]
+            text-[13px]
+            sm:text-[14px]
             leading-snug
             font-black
             text-gray-800
@@ -218,32 +217,27 @@ const ProductCard = memo(function ProductCard({
           </h3>
         </Link>
 
-        {/* SMART SCARCITY (from Deal Engine - real data) */}
-        <div className={`rounded-2xl border px-3 py-2 ${classes.bgLight} ${classes.border}`}>
-          <p className={`text-[11px] font-bold ${classes.text}`}>
-            {deal.scarcityText}
-          </p>
-        </div>
+
 
         {/* PRICE */}
         <div className="space-y-2">
           {discount > 0 && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-400 line-through decoration-rose-400">
+              <span className="text-[10px] sm:text-xs text-gray-400 line-through decoration-rose-400">
                 {formatPrice(
                   product.original_price,
                   product.currency
                 )}
               </span>
 
-              <div className="rounded-full bg-rose-100 px-2 py-1 text-[10px] font-black text-rose-600">
+              <div className="rounded-md bg-rose-100 px-1.5 py-0.5 text-[9px] font-black text-rose-600">
                 -%{discount}
               </div>
             </div>
           )}
 
-          <div className="flex items-end gap-2 flex-wrap">
-            <span className="text-3xl sm:text-4xl font-black tracking-tight text-gray-900">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xl sm:text-2xl font-black tracking-tight text-gray-900">
               {formatPrice(
                 product.current_price,
                 product.currency
@@ -251,42 +245,12 @@ const ProductCard = memo(function ProductCard({
             </span>
 
             {discount > 0 && (
-              <div className="rounded-xl bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">
+              <div className="rounded-lg bg-emerald-100 px-2 py-0.5 text-[9px] font-black text-emerald-700">
                 ₺{Math.round(savings)} TASARRUF
               </div>
             )}
           </div>
 
-          <p className="text-xs font-medium text-gray-500">
-            {product.is_lowest_price ? "✅ Bu platformdaki en uygun fiyat" : "💸 Fırsat takipçilerimiz bu ürünü inceliyor"}
-          </p>
-        </div>
-
-        {/* SAVINGS METER */}
-        {discount > 0 && (
-          <div className="space-y-2">
-            <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-green-500 transition-all duration-700"
-                style={{
-                  width: `${Math.min(discount, 100)}%`,
-                }}
-              />
-            </div>
-
-            <p className="text-[10px] font-bold text-emerald-700">
-              Bu fırsat piyasadaki tekliflerin %{discount}
-              kadar daha avantajlı
-            </p>
-          </div>
-        )}
-
-        {/* VERIFICATION AND POPULARITY */}
-        <div className="flex items-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <p className="text-[11px] font-bold text-emerald-700">
-            Fiyat güncel ve doğrulandı
-          </p>
         </div>
 
         {/* REAL CLICK COUNT - only show if we have real data */}
@@ -300,73 +264,86 @@ const ProductCard = memo(function ProductCard({
         )}
 
         {/* CTA */}
-        <div className="mt-auto flex gap-2 pt-2">
-          {/* Compare Button - shows text on all screens */}
-          <Link
-            href={`/compare?p1=${product.id}`}
-            className="
-              flex
-              h-12
-              flex-1
-              items-center
-              justify-center
-              rounded-2xl
-              border-2
-              border-gray-100
-              bg-white
-              text-xs
-              font-black
-              text-gray-700
-              transition-all duration-300
-              hover:border-orange-500
-              hover:bg-orange-50
-              hover:text-orange-600
-              active:scale-95
-            "
-          >
-            Karşılaştır
-          </Link>
-
-          {/* CTA BUTTON */}
+        <div className="mt-auto flex flex-col gap-1.5 pt-2">
+          {/* View Details Button */}
           <Link
             href={`/product/${product.id}`}
-            className="
-              relative
-              overflow-hidden
-              flex-[1.5]
-              h-12
-              rounded-2xl
-              bg-gradient-to-r
-              from-orange-500
-              via-orange-600
-              to-red-500
-              px-4
-              text-white
-              shadow-[0_12px_30px_rgba(249,115,22,.30)]
-              transition-all
-              duration-300
-              hover:scale-[1.02]
-              hover:shadow-[0_18px_40px_rgba(249,115,22,.45)]
-              active:scale-95
-              flex
-              items-center
-              justify-center
-            "
+            className="w-full text-center py-1 text-[10px] sm:text-[11px] font-bold text-gray-500 hover:text-orange-600 transition-colors"
           >
-            <span className="relative z-10 flex items-center gap-2 text-sm font-black">
-              YAKALA
-            </span>
-
-            {/* shine animation */}
-            <div className="
-              absolute inset-0
-              translate-x-[-100%]
-              bg-white/20
-              transition-transform
-              duration-1000
-              group-hover:translate-x-[100%]
-            " />
+            Ürün Detayları
           </Link>
+          
+          <div className="flex gap-2">
+            {/* Compare Button - shows text on all screens */}
+            <Link
+              href={`/compare?p1=${product.id}`}
+              className="
+                flex
+                h-9 sm:h-10
+                flex-1
+                items-center
+                justify-center
+                rounded-xl
+                border-2
+                border-gray-100
+                bg-white
+                text-[10px] sm:text-xs
+                font-black
+                text-gray-700
+                transition-all duration-300
+                hover:border-orange-500
+                hover:bg-orange-50
+                hover:text-orange-600
+                active:scale-95
+              "
+            >
+              Karşılaştır
+            </Link>
+
+            {/* CTA BUTTON */}
+            <a
+              href={product.affiliate_link || product.source_url || "#"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="
+                relative
+                overflow-hidden
+                flex-[1.5]
+                h-9 sm:h-10
+                rounded-xl
+                bg-gradient-to-r
+                from-orange-500
+                via-orange-600
+                to-red-500
+                px-4
+                text-white
+                shadow-[0_12px_30px_rgba(249,115,22,.30)]
+                transition-all
+                duration-300
+                hover:scale-[1.02]
+                hover:shadow-[0_18px_40px_rgba(249,115,22,.45)]
+                active:scale-95
+                flex
+                items-center
+                justify-center
+                group
+              "
+            >
+              <span className="relative z-10 flex items-center gap-1 sm:gap-2 text-xs sm:text-sm font-black">
+                YAKALA
+              </span>
+
+              {/* shine animation */}
+              <div className="
+                absolute inset-0
+                translate-x-[-100%]
+                bg-white/20
+                transition-transform
+                duration-1000
+                group-hover:translate-x-[100%]
+              " />
+            </a>
+          </div>
         </div>
       </div>
     </div>

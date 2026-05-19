@@ -59,7 +59,7 @@ export default function ClientProductList({ initialProducts }: { initialProducts
           <p className="text-gray-500 mt-3 font-medium max-w-xs mx-auto">Aradığınız kriterlere uygun ürün şu an için mevcut değil. Başka bir kelime deneyebilirsiniz.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
           {filteredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}

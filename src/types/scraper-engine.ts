@@ -30,13 +30,13 @@ export interface ScrapedProduct {
 export interface ExtractionResult {
   data: Partial<ScrapedProduct>;
   confidence: number; // 0.00 to 1.00
-  extractor: 'JSON-LD' | 'CSS-Selector' | 'Regex' | 'AI-Fallback' | 'Vision-OCR';
+  extractor: 'JSON-LD' | 'CSS-Selector' | 'Regex' | 'AI-Fallback' | 'Vision-OCR' | 'Hepsiburada-Native';
 }
 
 export interface SmartRouteConfig {
   platform: PlatformType;
   requiresJS: boolean;
-  priorityOrder: ('JSON-LD' | 'CSS-Selector' | 'Regex' | 'AI-Fallback' | 'Vision-OCR')[];
+  priorityOrder: ('JSON-LD' | 'CSS-Selector' | 'Regex' | 'AI-Fallback' | 'Vision-OCR' | 'Hepsiburada-Native')[];
   antiBotRisk: 'LOW' | 'MEDIUM' | 'HIGH' | 'EXTREME';
 }
 

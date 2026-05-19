@@ -6,7 +6,7 @@
 import { ScrapedProduct, ExtractionResult } from '@/types/scraper-engine';
 import { routeRequest, applyAffiliateTag } from './router';
 import { fetchWithStealth } from './browser';
-import { extractJsonLd, extractCss, extractRegex, extractAi, extractVision } from './extractors';
+import { extractHepsiburadaNative, extractAi, extractVision } from './extractors';
 import { validatePriceIntegrity, normalizePrice } from './validation';
 import { generateContentHash, isPageUnchanged, updatePageHash, logScrapingExecution, persistScrapedProduct } from './db';
 import { getPlatformFromUrl } from './config';
@@ -77,39 +77,21 @@ export async function runScraperEngine(url: string, bypassCache = false): Promis
     // 3. Multi-Layered Parallel/Sequential Extraction Pipeline
     const extractionCandidates: ExtractionResult[] = [];
 
-    // Prioritize extraction based on Smart Router configuration order
-    for (const extractor of routerConfig.priorityOrder) {
-      if (extractor === 'JSON-LD') {
-        const res = extractJsonLd(fetchResult.html);
-        if (res.confidence > 0.3) extractionCandidates.push(res);
-      }
-      
-      else if (extractor === 'CSS-Selector') {
-        const res = await extractCss(fetchResult.html, platform);
-        if (res.confidence > 0.3) extractionCandidates.push(res);
-      }
-      
-      else if (extractor === 'Regex') {
-        const res = extractRegex(fetchResult.html);
-        if (res.confidence > 0.3) extractionCandidates.push(res);
-      }
-      
-      else if (extractor === 'AI-Fallback') {
-        // Only run expensive Firecrawl AI scrape if other extractors failed (low confidence)
-        const maxConfidence = Math.max(...extractionCandidates.map(c => c.confidence), 0);
-        if (maxConfidence < 0.70) {
-          const res = await extractAi(url);
-          if (res.confidence > 0.3) extractionCandidates.push(res);
-        }
-      }
+    // 3.1 Try Hyper-Optimized Hepsiburada Native Extractor First
+    const hbRes = await extractHepsiburadaNative(fetchResult.html);
+    if (hbRes.confidence > 0.3) extractionCandidates.push(hbRes);
 
-      else if (extractor === 'Vision-OCR' && fetchResult.screenshotBase64) {
-        // Runs screenshot-to-text Vision AI if Captcha blocked or selectors completely failed
-        const maxConfidence = Math.max(...extractionCandidates.map(c => c.confidence), 0);
-        if (maxConfidence < 0.50) {
-          const res = await extractVision(fetchResult.screenshotBase64);
-          if (res.confidence > 0.3) extractionCandidates.push(res);
-        }
+    // 3.2 AI Fallback if Native parsing fails or has low confidence
+    if (hbRes.confidence < 0.80) {
+      const aiRes = await extractAi(url);
+      if (aiRes.confidence > 0.3) extractionCandidates.push(aiRes);
+    }
+
+    // 3.3 Vision OCR Fallback if still low confidence
+    if (extractionCandidates.length === 0 || Math.max(...extractionCandidates.map(c => c.confidence)) < 0.50) {
+      if (fetchResult.screenshotBase64) {
+        const visRes = await extractVision(fetchResult.screenshotBase64);
+        if (visRes.confidence > 0.3) extractionCandidates.push(visRes);
       }
     }
 

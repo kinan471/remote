@@ -22,32 +22,7 @@ export interface BrowserFetchResult {
 export async function fetchWithStealth(url: string, platform: string, forceJS = false): Promise<BrowserFetchResult> {
   const userAgent = ENGINE_CONFIG.userAgents[Math.floor(Math.random() * ENGINE_CONFIG.userAgents.length)];
   
-  // 1. Check if we can run simple HTTP fetch (extremely cheap, bypasses chromium spins)
-  if (!forceJS && platform === 'trendyol') {
-    try {
-      console.log(`[BrowserPool] [Cheerio-HTTP] Bypassing Chromium, requesting via direct HTTP request: ${url}`);
-      
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': userAgent,
-          'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-      
-      if (response.ok) {
-        return {
-          html: await response.text(),
-          status: response.status,
-          success: true
-        };
-      }
-    } catch (err: any) {
-      console.warn(`[BrowserPool] HTTP request fallback failed for ${url}:`, err.message);
-    }
-  }
+  // 1. Direct HTTP fetch is removed because Vercel IPs are strictly blacklisted by Turkish e-commerce sites.
 
   // 2. Playwright Stealth Fetcher (Decoupled & Serverless-Safe Fallback)
   try {
@@ -69,7 +44,11 @@ export async function fetchWithStealth(url: string, platform: string, forceJS = 
             "Authorization": `Bearer ${ENGINE_CONFIG.firecrawlKey}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ url, formats: ["html"] })
+          body: JSON.stringify({ 
+            url, 
+            formats: ["html"],
+            waitFor: 2500 // Wait for JS rendering
+          })
         });
         
         if (firecrawlRes.ok) {

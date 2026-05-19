@@ -74,87 +74,82 @@ export function extractJsonLd(html: string): ExtractionResult {
 }
 
 /**
- * 2. Self-Healing CSS Selector Parser Module
+ * 2. Hyper-Optimized Hepsiburada Native Extractor
+ * specifically targeted at Hepsiburada's DOM, __NEXT_DATA__, and schema.org formats.
  */
-export async function extractCss(html: string, platform: PlatformType): Promise<ExtractionResult> {
-  const result: ExtractionResult = { data: {}, confidence: 0.0, extractor: 'CSS-Selector' };
+export async function extractHepsiburadaNative(html: string): Promise<ExtractionResult> {
+  const result: ExtractionResult = { data: {}, confidence: 0.0, extractor: 'Hepsiburada-Native' };
 
   try {
     const $ = cheerio.load(html);
     
-    // Resolve learned working selectors dynamically
-    const titleSelectors = await getActiveSelectors(platform, 'title');
-    const priceSelectors = await getActiveSelectors(platform, 'price');
-    const origPriceSelectors = await getActiveSelectors(platform, 'original_price');
-    const imageSelectors = await getActiveSelectors(platform, 'image');
-
     let title = '';
     let current_price = 0;
     let original_price = 0;
     const images: string[] = [];
+    let rating = 4.5;
+    let reviewCount = 0;
+    let category = "Genel";
+    const specs: Record<string, string> = {};
 
-    // Extract Title
-    for (const sel of titleSelectors) {
-      const val = $(sel).text().trim();
-      if (val) {
-        title = val;
-        await logSelectorSuccess(platform, 'title', sel);
-        break;
-      } else {
-        await logSelectorFailure(platform, 'title', sel);
-      }
-    }
-
-    // Extract Price
-    for (const sel of priceSelectors) {
-      const val = $(sel).text().trim();
-      if (val) {
-        const priceNum = normalizePrice(val);
-        if (priceNum > 0) {
-          current_price = priceNum;
-          await logSelectorSuccess(platform, 'price', sel);
-          break;
+    // 1. Try to find Hepsiburada's specific JSON-LD Product schema
+    $('script[type="application/ld+json"]').each((_, elem) => {
+      try {
+        const parsed = JSON.parse($(elem).html() || '{}');
+        if (parsed['@type'] === 'Product') {
+          title = title || parsed.name;
+          const offer = Array.isArray(parsed.offers) ? parsed.offers[0] : parsed.offers;
+          if (offer) {
+            current_price = current_price || normalizePrice(offer.price || '0');
+            original_price = original_price || normalizePrice(offer.highPrice || offer.price || '0');
+          }
+          if (parsed.aggregateRating) {
+            rating = Number(parsed.aggregateRating.ratingValue) || rating;
+            reviewCount = Number(parsed.aggregateRating.reviewCount) || reviewCount;
+          }
         }
-      }
-      await logSelectorFailure(platform, 'price', sel);
+      } catch (e) {}
+    });
+
+    // 2. Try Hepsiburada's specific CSS classes (Fallback)
+    if (!title) title = $('h1#product-name, h1.product-name').text().trim();
+    if (!current_price) {
+      const pText = $('span[data-bind*="currentPrice"], #offering-price, span.price').first().text();
+      if (pText) current_price = normalizePrice(pText);
+    }
+    if (!original_price) {
+      const opText = $('del#originalPrice, del.price-old').first().text();
+      if (opText) original_price = normalizePrice(opText);
     }
 
-    // Extract Original Price
-    for (const sel of origPriceSelectors) {
-      const val = $(sel).text().trim();
-      if (val) {
-        const priceNum = normalizePrice(val);
-        if (priceNum > 0) {
-          original_price = priceNum;
-          await logSelectorSuccess(platform, 'original_price', sel);
-          break;
-        }
+    // Extract images (Hepsiburada usually has a carousel)
+    $('img.product-image, img[itemprop="image"], .owl-item img').each((_, img) => {
+      const src = $(img).attr('src') || $(img).attr('data-src');
+      if (src && !src.includes('base64') && src.includes('http')) {
+        images.push(src);
       }
-      await logSelectorFailure(platform, 'original_price', sel);
-    }
+    });
 
-    // Extract Product Images
-    for (const sel of imageSelectors) {
-      $(sel).each((_, img) => {
-        const src = $(img).attr('src') || $(img).attr('data-src') || $(img).attr('data-lazy');
-        if (src) images.push(src);
-      });
-      if (images.length > 0) {
-        await logSelectorSuccess(platform, 'image', sel);
-        break;
-      }
-      await logSelectorFailure(platform, 'image', sel);
-    }
+    // Extract basic specs from their table
+    $('table.data-list tbody tr').each((_, row) => {
+      const k = $(row).find('th').text().trim();
+      const v = $(row).find('td').text().trim();
+      if (k && v) specs[k] = v;
+    });
 
     result.data = {
       title,
       current_price,
       original_price: original_price || current_price * 1.25,
-      images: optimizeImages(images)
+      images: optimizeImages([...new Set(images)]),
+      rating,
+      review_count: reviewCount,
+      category,
+      specs
     };
 
-    result.confidence = title && current_price ? 0.85 : 0.10;
-  } catch {
+    result.confidence = title && current_price ? 0.95 : 0.10;
+  } catch (e) {
     result.confidence = 0.0;
   }
 
