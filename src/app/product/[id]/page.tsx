@@ -231,12 +231,6 @@ export default function ProductPage() {
                   🔥 %{discount} İNDİRİM
                 </div>
               )}
-
-              {product.rating > 0 && (
-                <div className="rounded-2xl bg-black/80 px-4 py-2 text-[11px] font-black text-white backdrop-blur-md">
-                  ⭐ {product.rating.toFixed(1)} PUAN
-                </div>
-              )}
             </div>
 
             {/* image */}
@@ -643,46 +637,81 @@ export default function ProductPage() {
                 </div>
 
                 {/* stock */}
-                <div
-                  className="
-                    rounded-3xl
-                    border
-                    border-rose-100
-                    bg-rose-50
-                    p-5
-                  "
-                >
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="text-sm font-bold text-gray-700">
-                      Stok Durumu
-                    </span>
+                {product.scarcity_level < 10 ? (
+                  <div
+                    className="
+                      rounded-3xl
+                      border
+                      border-rose-100
+                      bg-rose-50
+                      p-5
+                    "
+                  >
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="text-sm font-bold text-gray-700">
+                        Stok Durumu
+                      </span>
 
-                    <span className="animate-pulse text-sm font-black text-rose-600">
-                      Son{" "}
-                      {
-                        product.scarcity_level
-                      }{" "}
-                      adet
-                    </span>
-                  </div>
+                      <span className="animate-pulse text-sm font-black text-rose-600">
+                        Son {product.scarcity_level} adet
+                      </span>
+                    </div>
 
-                  <div className="h-3 overflow-hidden rounded-full bg-white">
-                    <div
-                      className="
-                        h-full
-                        rounded-full
-                        bg-gradient-to-r
-                        from-rose-500
-                        to-orange-500
-                        transition-all
-                        duration-1000
-                      "
-                      style={{
-                        width: `${scarcityPct}%`,
-                      }}
-                    />
+                    <div className="h-3 overflow-hidden rounded-full bg-white">
+                      <div
+                        className="
+                          h-full
+                          rounded-full
+                          bg-gradient-to-r
+                          from-rose-500
+                          to-orange-500
+                          transition-all
+                          duration-1000
+                        "
+                        style={{
+                          width: `${scarcityPct}%`,
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div
+                    className="
+                      rounded-3xl
+                      border
+                      border-emerald-100
+                      bg-emerald-50/50
+                      p-5
+                    "
+                  >
+                    <div className="mb-3 flex items-center justify-between">
+                      <span className="text-sm font-bold text-gray-700">
+                        Stok Durumu
+                      </span>
+
+                      <span className="text-sm font-black text-emerald-600">
+                        Stokta Var
+                      </span>
+                    </div>
+
+                    <div className="h-3 overflow-hidden rounded-full bg-white">
+                      <div
+                        className="
+                          h-full
+                          rounded-full
+                          bg-gradient-to-r
+                          from-emerald-400
+                          to-green-500
+                          transition-all
+                          duration-1000
+                        "
+                        style={{
+                          width: "100%",
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* real last updated verification */}
                 <div
@@ -773,6 +802,32 @@ export default function ProductPage() {
                         group-hover:translate-x-[100%]
                       "
                     />
+                  </Link>
+
+                  <Link
+                    href={`/compare?p1=${product.id}`}
+                    className="
+                      flex
+                      h-14
+                      w-full
+                      items-center
+                      justify-center
+                      rounded-[24px]
+                      border-2
+                      border-gray-200
+                      bg-white
+                      text-base
+                      font-black
+                      text-gray-700
+                      transition-all
+                      duration-300
+                      hover:border-orange-500
+                      hover:bg-orange-50
+                      hover:text-orange-600
+                      active:scale-95
+                    "
+                  >
+                    ⚖️ Ürünü Karşılaştır
                   </Link>
 
                   <div className="space-y-2 text-center">

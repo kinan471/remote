@@ -137,6 +137,18 @@ export async function extractHepsiburadaNative(html: string): Promise<Extraction
       if (k && v) specs[k] = v;
     });
 
+    // Try to extract stock/scarcity level dynamically
+    let scarcity_level = 10;
+    const stockMatch = html.match(/(?:son|sadece)\s*(\d+)\s*(?:adet|ürün|tane)/i);
+    if (stockMatch) {
+      scarcity_level = parseInt(stockMatch[1]);
+    } else {
+      const jsonStockMatch = html.match(/"(?:stock|inventory|qty|quantity|remaining)"\s*:\s*"?(\d+)"?/i);
+      if (jsonStockMatch) {
+        scarcity_level = parseInt(jsonStockMatch[1]);
+      }
+    }
+
     result.data = {
       title,
       current_price,
@@ -145,7 +157,8 @@ export async function extractHepsiburadaNative(html: string): Promise<Extraction
       rating,
       review_count: reviewCount,
       category,
-      specs
+      specs,
+      scarcity_level
     };
 
     result.confidence = title && current_price ? 0.95 : 0.10;
