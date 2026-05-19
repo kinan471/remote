@@ -16,8 +16,8 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
-      {/* Marquee sits right below fixed navbar - pt-[68px] on mobile, pt-20 on sm+ */}
-      <div className="pt-[68px] sm:pt-20">
+      {/* Marquee sits right below fixed navbar - pt-[120px] on mobile, pt-20 on sm+ */}
+      <div className="pt-[120px] sm:pt-20">
         <Marquee />
       </div>
       <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 mt-4">

@@ -117,24 +117,6 @@ export default function UserLoginPage() {
           </div>
         </div>
 
-        {/* Admin link */}
-        <p className="text-center mt-6 text-xs text-gray-400">
-          Yönetici mi?{" "}
-          <Link
-            href="/login?next=/admin"
-            className="text-orange-500 font-bold hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              const supabase = createClient();
-              supabase.auth.signInWithOAuth({
-                provider: "google",
-                options: { redirectTo: `${location.origin}/auth/callback?next=/admin` },
-              });
-            }}
-          >
-            Yönetici Girişi
-          </Link>
-        </p>
       </div>
     </div>
   );

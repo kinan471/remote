@@ -40,6 +40,13 @@ export default function AdminDashboard() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | null }>({ message: "", type: null });
 
+  // Broadcast Notification State
+  const [notifyTitle, setNotifyTitle] = useState("");
+  const [notifyMessage, setNotifyMessage] = useState("");
+  const [notifyLink, setNotifyLink] = useState("");
+  const [notifyType, setNotifyType] = useState("new_offer");
+  const [notifyLoading, setNotifyLoading] = useState(false);
+
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
     setTimeout(() => setToast({ message: "", type: null }), 5000);
@@ -303,6 +310,43 @@ export default function AdminDashboard() {
     }
   };
 
+  const sendBroadcastNotification = async () => {
+    if (!notifyTitle || !notifyMessage) {
+      showToast("Lütfen başlık ve mesaj girin.", "error");
+      return;
+    }
+    setNotifyLoading(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const admin_email = data?.session?.user?.email || "admin@yakala.com"; // basic fallback
+      
+      const res = await fetch("/api/notifications/broadcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: notifyTitle,
+          message: notifyMessage,
+          type: notifyType,
+          link_url: notifyLink,
+          admin_email
+        })
+      });
+      const resData = await res.json();
+      if (res.ok) {
+        showToast(`Bildirim başarıyla gönderildi! (${resData.count} kullanıcı)`, "success");
+        setNotifyTitle("");
+        setNotifyMessage("");
+        setNotifyLink("");
+      } else {
+        showToast(resData.error || "Bildirim gönderilemedi", "error");
+      }
+    } catch (e: any) {
+      showToast("Hata oluştu: " + e.message, "error");
+    } finally {
+      setNotifyLoading(false);
+    }
+  };
+
 
 
   return (
@@ -357,6 +401,68 @@ export default function AdminDashboard() {
             <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
             Bu metin sayfanın en üstünde kayan yazı olarak görünecektir.
           </p>
+        </div>
+
+        {/* ── BROADCAST NOTIFICATION SENDER ── */}
+        <div className="admin-card mb-6 border-l-4 border-l-purple-500 bg-gradient-to-br from-white to-purple-50/20">
+          <h3 className="text-gray-900 font-black text-lg mb-4 flex items-center gap-2">
+            🔔 Toplu İndirim Bildirimi Gönder
+          </h3>
+          <p className="text-xs text-gray-500 font-medium mb-5">
+            Bu panelden göndereceğiniz bildirim, kayıtlı tüm kullanıcıların "Bildirimler (Çan)" simgesinde anında kırmızı uyarı ile görünecektir. Yeni kampanyaları ve özel fırsatları duyurmak için kullanın.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Bildirim Başlığı</label>
+              <input
+                type="text"
+                value={notifyTitle}
+                onChange={(e) => setNotifyTitle(e.target.value)}
+                className="admin-input w-full"
+                placeholder="Örn: 🚨 Dev Cuma İndirimleri Başladı!"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Bildirim Türü</label>
+              <select
+                value={notifyType}
+                onChange={(e) => setNotifyType(e.target.value)}
+                className="admin-input w-full"
+              >
+                <option value="new_offer">🎁 Yeni Kampanya / Fırsat</option>
+                <option value="system">⚙️ Sistem Duyurusu</option>
+                <option value="price_drop">📉 Genel Fiyat Düşüşü</option>
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Açıklama Mesajı</label>
+              <textarea
+                value={notifyMessage}
+                onChange={(e) => setNotifyMessage(e.target.value)}
+                className="admin-input w-full min-h-[80px]"
+                placeholder="Bildirim içeriğini detaylıca yazın..."
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Yönlendirilecek URL (İsteğe Bağlı)</label>
+              <input
+                type="text"
+                value={notifyLink}
+                onChange={(e) => setNotifyLink(e.target.value)}
+                className="admin-input w-full"
+                placeholder="Örn: /product/123 veya https://..."
+              />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <button
+              onClick={sendBroadcastNotification}
+              disabled={notifyLoading}
+              className="px-6 py-3 bg-purple-600 text-white rounded-2xl text-sm font-black hover:bg-purple-700 shadow-lg shadow-purple-200 transition-all flex items-center gap-2 disabled:opacity-50"
+            >
+              {notifyLoading ? "Gönderiliyor..." : "🚀 Tüm Kullanıcılara Gönder"}
+            </button>
+          </div>
         </div>
 
         {/* ── ANALYTICS DASHBOARD ── */}

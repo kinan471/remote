@@ -199,7 +199,7 @@ export default function Navbar() {
                 setIsCategoryOpen(!isCategoryOpen);
                 if (!isCategoryOpen) setActiveSubCategory(null);
               }}
-              className="flex items-center gap-1 rounded-xl bg-[#2e82c3] px-2.5 py-1.5 text-[11px] font-black tracking-wide text-white transition-all active:scale-95 sm:hidden"
+              className="flex items-center gap-1 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 px-2.5 py-1.5 text-[11px] font-black tracking-wide text-white shadow-sm transition-all active:scale-95 sm:hidden"
             >
               Kategoriler
               <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" className={`transition-transform duration-200 ${isCategoryOpen ? "rotate-180" : ""}`}>
