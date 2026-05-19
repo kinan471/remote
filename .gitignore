@@ -1,7 +1,148 @@
+```
+# Build artifacts
+*.tsbuildinfo
+
+# Dependencies
 node_modules/
-.next/
-out/
-build/
+
+# Environment
 .env
 .env.local
-.vercel
+*.env.*
+
+# Logs
+*.log
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.cache/
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+
+# Node.js
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+node_modules/
+jspm_packages/
+*.log
+.npm
+.nyc_output
+coverage/
+.nyc_output/
+.repl_history
+.next/
+out/
+dist/
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+target/
+.gradle/
+build/
+
+# C/C++
+*.o
+*.a
+*.so
+*.dll
+*.exe
+*.out
+*.obj
+
+# Go
+*.o
+*.a
+*.so
+*.exe
+*.test
+*.prof
+bin/
+
+# Ruby
+*.gem
+*.rbc
+.bundle/
+vendor/bundle/
+.ruby-version
+.rbenv-vars
+.travis.yml
+.rubocop.yml
+guardfile
+.rspec
+Gemfile.lock
+Gemfile~
+
+# Rust
+target/
+Cargo.lock
+*.so
+*.dylib
+*.dll
+
+# Compression
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
+
+# Temp files
+*.tmp
+*.temp
+*.log
+*~
+.DS_Store
+Thumbs.db
+```

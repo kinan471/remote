@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
   try {
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!serviceRoleKey) {
-      return NextResponse.json({ error: "Sunucu hatası: SUPABASE_SERVICE_ROLE_KEY eksik." }, { status: 500 });
+      return NextResponse.json({ error: "Server error: SUPABASE_SERVICE_ROLE_KEY is not configured." }, { status: 500 });
     }
 
     const supabaseAdmin = createClient(
@@ -18,12 +18,12 @@ export async function POST(req: NextRequest) {
     const { title, message, type, link_url, secret } = body;
 
     if (!title || !message) {
-      return NextResponse.json({ error: "Eksik bilgi" }, { status: 400 });
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Verify admin secret
-    if (secret !== process.env.ADMIN_PASSWORD && secret !== "yakala2024") {
-      return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 403 });
+    // Verify admin secret - Use environment variable only, remove hardcoded fallback
+    if (secret !== process.env.ADMIN_SECRET) {
+      return NextResponse.json({ error: "Unauthorized access" }, { status: 403 });
     }
 
     // 2. Get all users from auth.users

@@ -7,15 +7,48 @@ import AnalyticsTracker from "@/components/AnalyticsTracker";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
-  title: "Yakala | Türkiye'nin En İyi Teknoloji Fırsat Platformu",
+  title: {
+    default: "Yakala | Türkiye'nin En İyi Teknoloji Fırsat Platformu",
+    template: "%s | Yakala",
+  },
   description:
     "Yakala ile Trendyol, Hepsiburada ve Amazon'daki en iyi teknoloji fırsatlarını kaçırma! Gerçek indirimler, sınırlı stok, anında teslimat.",
-  keywords: "yakala, trendyol fırsatlar, indirim, kampanya, hepsiburada, amazon türkiye, teknoloji fırsatları",
+  keywords: "yakala, trendyol fırsatlar, indirim, kampanya, hepsiburada, amazon türkiye, teknoloji fırsatları, laptop, telefon, elektronik",
   manifest: "/manifest.json",
   openGraph: {
     title: "Yakala | Türkiye'nin En İyi Fırsat Platformu",
     description: "Günün en iyi teknoloji fırsatlarını yakala! Sınırlı stok, gerçek indirimler.",
     type: "website",
+    locale: "tr_TR",
+    siteName: "Yakala",
+    images: [
+      {
+        url: "/icon-512x512.png",
+        width: 512,
+        height: 512,
+        alt: "Yakala - En İyi Teknoloji Fırsatları",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Yakala | En İyi Teknoloji Fırsatları",
+    description: "Günün en iyi teknoloji fırsatlarını yakala!",
+    images: ["/icon-512x512.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  alternates: {
+    canonical: "https://yakala.com",
   },
 };
 
@@ -39,6 +72,8 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Yakala" />
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
         <link rel="manifest" href="/manifest.json" />
+        <link rel="canonical" href="https://yakala.com" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
       </head>
       <body className="min-h-screen flex flex-col">
         <Suspense fallback={null}>

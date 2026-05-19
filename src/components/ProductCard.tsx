@@ -31,8 +31,8 @@ const ProductCard = memo(function ProductCard({
     ? getProductImage(product)
     : `https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800`;
 
+  // Check initial compare state on mount
   useState(() => {
-    // Initial check
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("yakala_compare_list");
       if (saved) {
@@ -44,6 +44,7 @@ const ProductCard = memo(function ProductCard({
     }
   });
 
+  // Listen for compare list changes
   useState(() => {
     if (typeof window !== "undefined") {
       const checkCompare = () => {
